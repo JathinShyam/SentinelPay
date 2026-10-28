@@ -1,0 +1,39 @@
+# Build output
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+
+# Maven wrapper downloads
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Test / benchmark artifacts
+target/gatling/
+gatling-results/
+docker/grafana/data/
+docker/prometheus/data/

@@ -1,0 +1,27 @@
+# SentinelPay AI Agent System Rules & Constraints
+
+> This file is read automatically by Cursor and is mirrored in `CLAUDE.md` for Claude Code.
+> The full product specification lives in [`SPECIFICATION.md`](SPECIFICATION.md). When anything is ambiguous, the specification wins.
+
+## Core Engineering Invariants
+
+1. **Zero Floating-Point Math:** Never use `float`, `double`, or `BigDecimal` for storage, calculation, or JSON/Kafka wire transfer of monetary values. All monetary fields must be 64-bit signed integers (`long` / `BIGINT`) representing minor units (e.g., `10050` = ₹100.50).
+2. **Strict Double-Entry Invariant:** Never mutate `accounts.balance_minor` without simultaneously inserting at least two rows into `ledger_entries` (one negative `DEBIT`, one positive `CREDIT`) within the exact same `@Transactional` boundary where `sum(signed_amount_minor) == 0`.
+3. **Deterministic Lock Ordering:** Whenever locking multiple `accounts` rows via `SELECT ... FOR UPDATE`, always sort the target UUID strings in ascending lexicographical order before querying to make circular database deadlocks mathematically impossible.
+4. **No Dual Writes:** Never call `KafkaTemplate.send()` inside an HTTP request thread or inside a ledger `@Transactional` method. All events must be written to `outbox_events` in the same PostgreSQL transaction and relayed asynchronously.
+5. **Append-Only Ledger:** Never generate `UPDATE` or `DELETE` statements against `ledger_entries` or `transactions`. Corrections must be executed as new compensating `REVERSAL` transactions.
+6. **Real Integration Tests Only:** Never mock `JdbcClient`, PostgreSQL, Redis, or Kafka in integration tests. All integration tests (`*IT.java`) must execute against real ephemeral containers using Testcontainers 2.0.3+.
+
+## Tech Stack Compliance
+
+- **Language & Runtime:** Java 21 LTS (Virtual Threads enabled via `spring.threads.virtual.enabled=true`).
+- **Framework:** Spring Boot 3.5+ / 4.x with Spring Data JDBC / `JdbcClient`.
+- **Database & Migration:** PostgreSQL 17+ with Flyway migration scripts in `src/main/resources/db/migration/`.
+- **Idempotency & Caching:** Redis 7+ for in-flight atomic locks (`SET NX EX`).
+- **Event Streaming:** Apache Kafka (KRaft mode) partitioned by `transaction_id`.
+
+## Build Protocol
+
+- Follow the phase-gated plan in [`SPECIFICATION.md`](SPECIFICATION.md) §11 and [`docs/MASTER_PROMPT.md`](docs/MASTER_PROMPT.md).
+- Do not skip ahead: generate one phase's files, run its verification gate (`./mvnw test -Dtest=<GateIT>`), and report before starting the next phase.
+- Never silently weaken an invariant to make a test pass; fix the design instead.
