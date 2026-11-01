@@ -123,6 +123,7 @@ If ports `5432`, `6379` or `9092` are already in use, override them for both Com
 SENTINELPAY_POSTGRES_PORT=5433 \
 SENTINELPAY_REDIS_PORT=6380 \
 SENTINELPAY_KAFKA_PORT=19092 \
+SENTINELPAY_GRAFANA_PORT=3001 \
 docker compose up -d --wait
 
 SENTINELPAY_DB_URL=jdbc:postgresql://localhost:5433/sentinelpay \
@@ -131,7 +132,7 @@ SENTINELPAY_KAFKA_BOOTSTRAP_SERVERS=localhost:19092 \
 ./mvnw spring-boot:run
 ```
 
-Grafana is at `http://localhost:3001` (`admin` / `admin`) and Prometheus at `http://localhost:9090` when using the override above. The default ports are `3000` and `9090`.
+Grafana is at `http://localhost:3001` (`admin` / `admin`) and Prometheus at `http://localhost:9090` when using the override above. Override `SENTINELPAY_PROMETHEUS_PORT` as well if `9090` is occupied.
 
 ### Create an account and move money
 
