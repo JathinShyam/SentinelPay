@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: sentinelpay
+    orgId: 1
+    folder: SentinelPay
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

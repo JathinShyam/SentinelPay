@@ -1,0 +1,207 @@
+{
+  "uid": "sentinelpay",
+  "title": "SentinelPay",
+  "tags": ["sentinelpay", "ledger"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Transfer throughput by status / currency",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status, currency) (rate(sentinelpay_ledger_transfers_total[$__rate_interval]))",
+          "legendFormat": "{{status}} / {{currency}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Transfer latency p50 / p95 / p99",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(sentinelpay_ledger_transfer_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(sentinelpay_ledger_transfer_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sentinelpay_ledger_transfer_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Account lock acquisition p99",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sentinelpay_ledger_lock_acquisition_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "lock p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Outbox pending events",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinelpay_outbox_pending_gauge",
+          "legendFormat": "pending"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 20 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Outbox oldest-event lag",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinelpay_outbox_lag_seconds",
+          "legendFormat": "oldest pending"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 20 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Reconciliation discrepancies by type",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (type) (increase(sentinelpay_reconciliation_discrepancies_total[$__rate_interval]))",
+          "legendFormat": "{{type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 60 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "JVM heap",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(jvm_memory_used_bytes{area=\"heap\"})",
+          "legendFormat": "used"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(jvm_memory_max_bytes{area=\"heap\"})",
+          "legendFormat": "max"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Threads",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "jvm_threads_live_threads",
+          "legendFormat": "JVM live threads"
+        },
+        {
+          "refId": "B",
+          "expr": "sentinelpay_virtual_threads_active",
+          "legendFormat": "reconciliation virtual threads"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Hikari connections",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "hikaricp_connections_active",
+          "legendFormat": "active"
+        },
+        {
+          "refId": "B",
+          "expr": "hikaricp_connections_idle",
+          "legendFormat": "idle"
+        },
+        {
+          "refId": "C",
+          "expr": "hikaricp_connections_pending",
+          "legendFormat": "pending"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      }
+    }
+  ]
+}
