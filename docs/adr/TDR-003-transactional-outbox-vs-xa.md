@@ -11,6 +11,6 @@
 
 * Law 4 of the [agent directives](../../SPECIFICATION.md#6-ai-coding-agent-directives-non-negotiable-engineering-laws): no `KafkaTemplate.send()` in HTTP request threads or ledger transactions.
 * Schema: `outbox_events` table with partial index `idx_outbox_pending` on `(next_attempt_at ASC, created_at ASC) WHERE status = 'PENDING'`.
-* Relay: `OutboxRelayWorker` claims batches of 100 every 200ms with `FOR UPDATE SKIP LOCKED`; Kafka partition key = `aggregate_id` (`transaction_id`) to preserve per-transaction ordering; exponential backoff `2^retry_count` seconds; `DEAD_LETTER` after 5 failed attempts.
+* Relay: `OutboxRelayWorker` claims batches of 500 every 50ms with `FOR UPDATE SKIP LOCKED`, dispatches the whole batch asynchronously, then bulk-marks it processed while the claim transaction is still open; Kafka partition key = `aggregate_id` (`transaction_id`) to preserve per-transaction ordering; exponential backoff `2^retry_count` seconds; `DEAD_LETTER` after 5 failed attempts.
 * Delivery semantics: **at-least-once** → made **effectively-once** by two-tier idempotency (Redis ingress + `processed_kafka_events` consumer dedup). See [SPECIFICATION.md §5](../../SPECIFICATION.md#5-two-tier-idempotency--consumer-deduplication).
 * Alternative considered: Debezium CDC (noted as an option in the architecture table, not required for local spin-up).
