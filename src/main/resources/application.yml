@@ -11,9 +11,9 @@ spring:
     password: ${SENTINELPAY_DB_PASSWORD:sentinelpay}
     hikari:
       pool-name: sentinelpay-pool
-      maximum-pool-size: ${SENTINELPAY_DB_POOL_SIZE:32}
-      minimum-idle: 8
-      connection-timeout: 3000
+      maximum-pool-size: ${SENTINELPAY_DB_POOL_SIZE:50}
+      minimum-idle: 10
+      connection-timeout: 2000
       validation-timeout: 1000
       idle-timeout: 600000
       max-lifetime: 1800000
@@ -29,6 +29,11 @@ spring:
       host: ${SENTINELPAY_REDIS_HOST:localhost}
       port: ${SENTINELPAY_REDIS_PORT:6379}
       timeout: 2s
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 10
+          min-idle: 2
 
   kafka:
     bootstrap-servers: ${SENTINELPAY_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -37,10 +42,13 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
+      retries: 2147483647
+      compression-type: lz4
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
-        delivery.timeout.ms: 10000
+        delivery.timeout.ms: 15000
+        request.timeout.ms: 5000
         linger.ms: 5
     consumer:
       group-id: sentinelpay-settlement
@@ -48,14 +56,19 @@ spring:
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      properties:
-        isolation.level: read_committed
     listener:
-      ack-mode: manual_immediate
+      ack-mode: batch
       concurrency: 3
 
   jackson:
     default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 110MB
 
   lifecycle:
     timeout-per-shutdown-phase: 30s
@@ -83,13 +96,21 @@ management:
 
 sentinelpay:
   outbox:
-    poll-interval-ms: 200
-    batch-size: 100
+    topic: ledger.transactions.v1
+    poll-interval-ms: 50
+    batch-size: 500
+    send-timeout-ms: ${SENTINELPAY_OUTBOX_SEND_TIMEOUT_MS:3000}
     max-retries: 5
-    publish-timeout-ms: 3000
+    retry-base-seconds: 2
+    metrics-refresh-ms: 5000
   idempotency:
-    lock-ttl: 30s
-    response-ttl: 24h
+    header-name: Idempotency-Key
+    in-flight-ttl: 30s
+    completed-ttl: 24h
+    max-body-bytes: 1048576
+  reconciliation:
+    chunk-size: 1000
+    max-concurrency: 50
 
 logging:
   level:

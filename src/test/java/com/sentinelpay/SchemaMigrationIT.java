@@ -22,7 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>Runs Flyway against a real PostgreSQL 17 container and proves the schema's
  * non-negotiable invariants: both migrations apply, the outbox partial index exists,
- * journal lines balance, and PostgreSQL itself rejects UPDATE/DELETE on the ledger.
+ * journal lines balance, system accounts can fund user wallets, and PostgreSQL itself
+ * rejects UPDATE/DELETE on the ledger.
  */
 @Testcontainers
 class SchemaMigrationIT {
@@ -62,7 +63,7 @@ class SchemaMigrationIT {
     }
 
     @Test
-    void schemaContainsEveryPlaneAndThePartialOutboxIndex() {
+    void schemaContainsEveryPlaneAndTheFilteredOutboxIndex() {
         List<String> tables = jdbc.queryForList(
                 "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
                 String.class);
@@ -93,6 +94,53 @@ class SchemaMigrationIT {
                 String.class);
 
         assertThat(predicate).contains("PENDING");
+    }
+
+    @Test
+    void d1AndD2ColumnsExistAndEnforceTheirRules() {
+        UUID originalId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO transactions (transaction_id, idempotency_key, tx_type, status, currency)
+                VALUES (?, ?, 'TRANSFER', 'POSTED', 'INR')
+                """, originalId, "d1-" + originalId);
+
+        UUID firstReversal = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO transactions
+                    (transaction_id, idempotency_key, tx_type, status, currency, reversal_of)
+                VALUES (?, ?, 'REVERSAL', 'POSTED', 'INR', ?)
+                """, firstReversal, "d1-rev-" + firstReversal, originalId);
+
+        UUID secondReversal = UUID.randomUUID();
+        assertThatThrownBy(() -> jdbc.update("""
+                        INSERT INTO transactions
+                            (transaction_id, idempotency_key, tx_type, status, currency, reversal_of)
+                        VALUES (?, ?, 'REVERSAL', 'POSTED', 'INR', ?)
+                        """, secondReversal, "d1-rev-" + secondReversal, originalId))
+                .as("reversal_of UNIQUE must make a second reversal impossible")
+                .isInstanceOf(DataAccessException.class);
+
+        UUID userId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO accounts (account_id, owner_id, currency, balance_minor)
+                VALUES (?, ?, 'INR', 0)
+                """, userId, "user-" + userId);
+
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE accounts SET balance_minor = -1 WHERE account_id = ?", userId))
+                .as("USER wallets may not go negative")
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("chk_non_negative_balance");
+
+        UUID systemId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO accounts (account_id, owner_id, currency, balance_minor, account_type)
+                VALUES (?, 'SYSTEM_EQUITY', 'INR', -5000, 'SYSTEM')
+                """, systemId);
+
+        assertThat(jdbc.queryForObject(
+                "SELECT balance_minor FROM accounts WHERE account_id = ?", Long.class, systemId))
+                .isEqualTo(-5000L);
     }
 
     @Test
@@ -176,25 +224,25 @@ class SchemaMigrationIT {
         UUID runId = UUID.randomUUID();
         jdbc.update("""
                 INSERT INTO reconciliation_runs
-                    (run_id, source_file_name, status, total_records)
-                VALUES (?, 'clearing-2026-10-20.ndjson', 'RUNNING', 4)
+                    (run_id, file_name, business_date, status, total_records)
+                VALUES (?, 'clearing-2026-10-20.ndjson', DATE '2026-10-20', 'RUNNING', 4)
                 """, runId);
 
         for (String result : List.of("MATCHED", "AMOUNT_MISMATCH", "MISSING_INTERNAL", "MISSING_EXTERNAL")) {
             jdbc.update("""
                     INSERT INTO reconciliation_discrepancies
-                        (run_id, external_reference, status, external_amount_minor, currency)
+                        (run_id, type, external_ref, expected_amount_minor, currency)
                     VALUES (?, ?, ?, 1234, 'INR')
-                    """, runId, "EXT-" + result, result);
+                    """, runId, result, "EXT-" + result);
         }
 
         assertThatThrownBy(() -> jdbc.update("""
                         INSERT INTO reconciliation_discrepancies
-                            (run_id, external_reference, status)
-                        VALUES (?, 'EXT-BOGUS', 'BOGUS')
+                            (run_id, type, external_ref)
+                        VALUES (?, 'BOGUS', 'EXT-BOGUS')
                         """, runId))
                 .isInstanceOf(DataAccessException.class)
-                .hasMessageContaining("reconciliation_discrepancies_status_check");
+                .hasMessageContaining("reconciliation_discrepancies_type_check");
     }
 
     private SeededTransfer seedPostedTransfer() {
