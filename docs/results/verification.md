@@ -1,6 +1,6 @@
 # SentinelPay verification record
 
-**Run date:** final suite 2026-11-01; benchmark 2026-10-31 to 2026-11-01 (Asia/Kolkata)
+**Run date:** final suite 2026-11-05; benchmark 2026-10-31 to 2026-11-01 (Asia/Kolkata)
 **Runtime:** Temurin JDK 21.0.13, Spring Boot 3.5.16, packaged executable JAR
 **Infrastructure:** PostgreSQL 17, Kafka 3.9.0 and Redis 7.4 in Docker; Testcontainers 2.0.3 for the suite
 **Host:** Intel Core i5-9300H (4 physical / 8 logical cores), 15.8 GB RAM, ext4 on NVMe
@@ -14,20 +14,20 @@ The host is a shared laptop, not a dedicated benchmark machine. PostgreSQL durab
 ./mvnw verify
 ```
 
-Result: **BUILD SUCCESS — 35 tests, 0 failures, 0 errors, 0 skipped** in 55.3 s.
+Result: **BUILD SUCCESS — 36 tests, 0 failures, 0 errors, 0 skipped** in 53.4 s.
 
 | Test class | Tests | Time | Phase / gate |
 | --- | ---: | ---: | --- |
-| `SchemaMigrationIT` | 8 | 2.4 s | 1 — Flyway, append-only trigger, D-1/D-2 constraints |
-| `LedgerTransferIT` | 7 | 0.4 s | 2 — double entry and request validation |
-| `ReversalAuditIT` | 5 | 14.0 s | 2 — compensating reversals, audit drift and cross-account balance proof |
-| `LedgerInvariantIT` | 1 | 1.2 s | 2 — global balance/journal invariant after mixed concurrency |
-| `ConcurrencyStressIT` | 2 | 1.1 s | 2 — overdraft race and deadlock freedom |
+| `SchemaMigrationIT` | 9 | 2.4 s | 1 — Flyway V1–V3, append-only journal and transaction triggers, D-1/D-2 constraints |
+| `LedgerTransferIT` | 7 | 0.3 s | 2 — double entry and request validation |
+| `ReversalAuditIT` | 5 | 13.7 s | 2 — compensating reversals, audit drift and cross-account balance proof |
+| `LedgerInvariantIT` | 1 | 0.7 s | 2 — global balance/journal invariant after mixed concurrency |
+| `ConcurrencyStressIT` | 2 | 0.9 s | 2 — overdraft race and deadlock freedom |
 | `IdempotencyIT` | 5 | 0.2 s | 3 — Redis replay, 409 conflicts, 5xx lock release |
 | `KafkaConsumerIT` | 2 | 1.9 s | 3 — at-least-once delivery and event dedup |
-| `OutboxResilienceIT` | 1 | 1.5 s | 3 — broker pause/recovery |
-| `OutboxDeadLetterIT` | 1 | 3.0 s | 3 — unreachable broker → `DEAD_LETTER` after one retry |
-| `ReconciliationEngineIT` | 2 | 25.7 s | 4 — 100,000 records, 100 anomalies, **3,084 ms** engine time |
+| `OutboxResilienceIT` | 1 | 1.4 s | 3 — broker pause/recovery |
+| `OutboxDeadLetterIT` | 1 | 2.9 s | 3 — unreachable broker → `DEAD_LETTER` after one retry |
+| `ReconciliationEngineIT` | 2 | 24.9 s | 4 — 100,000 records, 100 anomalies, **2,594 ms** engine time |
 | `MetricsIT` | 1 | 0.1 s | 5 — required Micrometer families and tags |
 
 The `ReversalAuditIT` runtime includes the intentionally broken reversal envelope used by

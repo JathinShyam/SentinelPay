@@ -119,6 +119,7 @@
   - [x] `reconciliation_discrepancies(discrepancy_id, run_id FK, type, external_ref, transaction_id, expected_amount_minor, actual_amount_minor, currency, details JSONB, created_at)` with `CHECK type IN ('MATCHED','AMOUNT_MISMATCH','MISSING_INTERNAL','MISSING_EXTERNAL')`.
   - [x] `processed_kafka_events(event_id UUID PRIMARY KEY, processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`.
   - [x] Indexes: `reconciliation_discrepancies(run_id, type)`, `reconciliation_runs(business_date DESC)`.
+- [x] `V3__immutable_transactions.sql` — `BEFORE UPDATE OR DELETE` trigger on `transactions`, added 2026-11-05 after the Phase 5 sign-off to enforce Law 5 on the envelope as well as the journal.
 - [x] Verify migrations never insert/update ledger data manually.
 
 ### 2.5 Test infrastructure & schema gate
@@ -128,13 +129,13 @@
   - [x] Explicit `DynamicPropertySource` wiring for all three containers; no infrastructure mocks. A fixed Kafka host port avoids Testcontainers 2.x advertised-listener surprises.
   - [x] `@SpringBootTest(webEnvironment = RANDOM_PORT)`; containers start as static singletons and are reused across the suite.
 - [x] `SchemaMigrationIT`:
-  - [x] Context starts; `flyway_schema_history` contains V1 and V2 with `success = true`.
+  - [x] Context starts; `flyway_schema_history` contains V1, V2 and V3 with `success = true`.
   - [x] Insert a valid `DEBIT`/`CREDIT` pair; both accepted.
   - [x] `UPDATE ledger_entries` throws a PostgreSQL/Spring `DataAccessException` containing "append-only".
   - [x] `DELETE FROM ledger_entries` throws the same.
   - [x] Wrong-sign entry (`direction='DEBIT'`, positive amount) is rejected by `chk_direction_sign`.
   - [x] `SELECT indexdef ...` confirms `idx_outbox_pending` is partial (`WHERE status = 'PENDING'`).
-  - [ ] Confirm the `transactions` row cannot be deleted (add a trigger in V3 if we decide to enforce it; currently only the trigger on entries exists). **Not enforced:** journal immutability is the tested invariant; an unreferenced transaction row could still be deleted.
+  - [x] Confirm the `transactions` row cannot be deleted or rewritten. Enforced by `V3__immutable_transactions.sql` (`trg_immutable_transactions`, added 2026-11-05); `SchemaMigrationIT` proves both `UPDATE` and `DELETE` raise "append-only".
 
 ### 2.6 Phase 1 gate
 
@@ -360,7 +361,7 @@
 ./mvnw test -Dtest=ReconciliationEngineIT
 ```
 
-**Measured (2026-11-01, final 35-test run):** 100,000 records in **3,084 ms** (an earlier warm run measured 1,872 ms); 99,925 matched, 50 amount mismatches, 25 missing internal, 25 missing external; 100 persisted anomalies.
+**Measured (2026-11-05, final 36-test run):** 100,000 records in **2,594 ms** (earlier runs measured 1,872 ms and 3,084 ms); 99,925 matched, 50 amount mismatches, 25 missing internal, 25 missing external; 100 persisted anomalies.
 
 **Exit criteria:** gate green; no clearing file fully buffered in memory; virtual threads bounded by `Semaphore(50)`; anomalies persisted and queryable by run.
 
@@ -420,7 +421,7 @@
   - [x] Benchmark table: achieved TPS, p50/p95/p99, error rate, outbox lag, reconciliation duration, hardware.
   - [x] ADR links and explicit trade-offs/limitations.
 - [x] Commit Grafana dashboard JSON, Gatling simulation, and benchmark evidence. Committed in `b10656b` with the failure report screenshot and storage analysis under [`results/`](results/).
-- [x] Final full-suite run: `./mvnw verify` (or document the exact Surefire/Failsafe invocation for `*IT`). **35 tests green in 55.3 s** after adding the audit and dead-letter regressions; full record in [`results/verification.md`](results/verification.md).
+- [x] Final full-suite run: `./mvnw verify` (or document the exact Surefire/Failsafe invocation for `*IT`). **36 tests green in 53.4 s** after adding the transaction-immutability, audit and dead-letter regressions; full record in [`results/verification.md`](results/verification.md).
 
 ### 6.5 Phase 5 gate
 
@@ -428,7 +429,7 @@
 - [x] All four required metrics visible at `/actuator/prometheus`.
 - [x] Grafana dashboard renders live data (nine panels captured at [`results/grafana-live.png`](results/grafana-live.png)).
 - [x] README quick start works from a clean clone. Verified on 2026-11-01 from `c3ffd65`: Compose overrides healthy, clean package succeeded, health `UP`, transfer `201`, replay `200` with `Idempotency-Replayed: true`, audit `driftMinor: 0`, and the outbox/Kafka path drained. Evidence: [`results/verification.md#clean-clone-quick-start`](results/verification.md#clean-clone-quick-start).
-- [x] All earlier gates still green in the same build (`./mvnw verify`, 35 tests).
+- [x] All earlier gates still green in the same build (`./mvnw verify`, 36 tests).
 
 ---
 
@@ -436,7 +437,7 @@
 
 | Test class | Phase | Infrastructure | Proves |
 | --- | --- | --- | --- |
-| `SchemaMigrationIT` | 1 | Postgres | Flyway clean apply, append-only trigger, sign constraints, partial index |
+| `SchemaMigrationIT` | 1 | Postgres | Flyway clean apply (V1–V3), append-only triggers on journal and transactions, sign constraints, partial index |
 | `LedgerTransferIT` | 2 | Postgres | Double-entry posting, validations, DB idempotency |
 | `ReversalAuditIT` | 2 | Postgres | Compensating reversals, derived status, zero drift, cross-account transaction balance proof |
 | `LedgerInvariantIT` | 2 | Postgres | `balance_minor = SUM(entries)` for every account |

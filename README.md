@@ -22,6 +22,7 @@ The project is deliberately built around three failure modes that break naive pa
 - [Guarantees and tests](#guarantees-and-tests)
 - [Benchmark](#benchmark)
 - [Trade-offs and limitations](#trade-offs-and-limitations)
+- [Roadmap](#roadmap)
 - [Operations](#operations)
 - [Project layout](#project-layout)
 - [Decision records](#decision-records)
@@ -198,23 +199,23 @@ The integration suite runs against real PostgreSQL, Redis and Kafka containers. 
 
 | Phase | Gate | What it proves |
 | --- | --- | --- |
-| 1 | `./mvnw test -Dtest=SchemaMigrationIT` | Flyway applies V1/V2; append-only trigger; sign constraints; partial outbox index; D-1/D-2 rules |
+| 1 | `./mvnw test -Dtest=SchemaMigrationIT` | Flyway applies V1–V3; append-only triggers on the journal and transactions; sign constraints; partial outbox index; D-1/D-2 rules |
 | 2 | `./mvnw test -Dtest=ConcurrencyStressIT` | Exactly the funded number of concurrent transfers succeed; zero deadlocks; net balances preserved |
 | 3 | `./mvnw test -Dtest=OutboxResilienceIT` | Kafka outage leaves events pending; all arrive after recovery; consumer dedup works |
 | 4 | `./mvnw test -Dtest=ReconciliationEngineIT` | 100,000 records, exactly 100 anomalies, engine well under the 5,000 ms gate |
 | 5 | `./mvnw test -Dtest=MetricsIT` | Required Prometheus families and tags are exported |
 | all | `./mvnw verify` | Full unit/integration suite from a clean checkout |
 
-Final suite measured on 2026-11-01 (details and counts in [`docs/results/verification.md`](docs/results/verification.md)):
+Final suite measured on 2026-11-05 (details and counts in [`docs/results/verification.md`](docs/results/verification.md)):
 
 | Gate | Result |
 | --- | --- |
-| `SchemaMigrationIT` | PASS — 8 tests |
+| `SchemaMigrationIT` | PASS — 9 tests |
 | `LedgerTransferIT` + `ReversalAuditIT` + `LedgerInvariantIT` | PASS — 13 tests |
 | `ConcurrencyStressIT` | PASS — 2 concurrency scenarios, zero deadlocks |
 | `IdempotencyIT` | PASS — 5 tests |
 | `KafkaConsumerIT` + `OutboxResilienceIT` + `OutboxDeadLetterIT` | PASS — 4 tests, including broker pause/recovery and dead-letter exhaustion |
-| `ReconciliationEngineIT` | PASS — 2 tests, 100,000 records in 3,084 ms |
+| `ReconciliationEngineIT` | PASS — 2 tests, 100,000 records in 2,594 ms |
 | `MetricsIT` | PASS — 1 test |
 
 The load gate is reported separately below. It was **not weakened** to make the build green.
@@ -292,6 +293,13 @@ Gatling report path and [Grafana screenshot](docs/results/grafana-live.png) are 
 - **No authentication, authorisation, fraud scoring, FX conversion or card-network integration.** Those are outside the ledger/settlement scope.
 - **Load target not met on this host.** The 2,500 rps / p99 < 25 ms assertion remains in the Gatling simulation and fails honestly on the documented laptop. The measured capacity and the exact failure are in the benchmark section; the target is realistic only on a dedicated host with fast durable storage and a separate load generator. See the risk note in [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md#8-risk-register).
 
+## Roadmap
+
+The MVP is complete. [`docs/ROADMAP.md`](docs/ROADMAP.md) tracks the remaining load-gate decision,
+the cgroup-limited benchmark, production hardening (authentication, retention/partitioning,
+alerting and deployment) and ledger extensions. The 2,500 rps / p99 < 25 ms assertion stays in
+place until a recorded decision replaces it with measured evidence.
+
 ## Operations
 
 - **Metrics** — `/actuator/prometheus` exports transfer outcomes, transfer/lock/commit latency histograms, outbox pending and lag, reconciliation discrepancies, JVM heap/threads and HikariCP pool state.
@@ -309,7 +317,7 @@ src/main/java/com/sentinelpay
 ├── outbox/          # relay, Kafka topic config, outbox metrics
 ├── settlement/      # Kafka consumer + effectively-once side effects
 └── reconciliation/  # streaming parser, virtual-thread engine, run/anomaly API
-src/main/resources/db/migration  # V1 ledger schema, V2 reconciliation schema
+src/main/resources/db/migration  # V1–V3 ledger, reconciliation and immutability schema
 src/test/java/com/sentinelpay     # Testcontainers integration gates + Gatling simulation
 docker/                           # Prometheus, Grafana provisioning and dashboard
 docs/                             # plan, ADRs, verification and benchmark records
@@ -321,7 +329,7 @@ docs/diagrams/                    # editable Excalidraw architecture and transfe
 - [TDR-001 — money as signed BIGINT minor units](docs/adr/TDR-001-minor-unit-bigint.md)
 - [TDR-002 — deterministic UUID lock ordering](docs/adr/TDR-002-deterministic-lock-ordering.md)
 - [TDR-003 — transactional outbox vs XA](docs/adr/TDR-003-transactional-outbox-vs-xa.md)
-- [TDR-004 — append-only ledger trigger](docs/adr/TDR-004-append-only-ledger-trigger.md)
+- [TDR-004 — append-only ledger and transaction triggers](docs/adr/TDR-004-append-only-ledger-trigger.md)
 - [TDR-005 — virtual threads for reconciliation](docs/adr/TDR-005-virtual-threads-reconciliation.md)
 
-The full design, PRD/TRD and schema source are in [`SPECIFICATION.md`](SPECIFICATION.md); the execution checklist is [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+The full design, PRD/TRD and schema source are in [`SPECIFICATION.md`](SPECIFICATION.md); the execution checklist is [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) and the forward plan is [`docs/ROADMAP.md`](docs/ROADMAP.md).
