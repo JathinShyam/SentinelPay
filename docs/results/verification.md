@@ -34,6 +34,41 @@ The `ReversalAuditIT` runtime includes the intentionally broken reversal envelop
 `IdempotencyIT`; its `500 INTERNAL_ERROR` is expected and proves that a server error releases the
 Redis idempotency lock. It is not a ledger failure.
 
+## Clean-clone quick start
+
+Verified on 2026-11-01 from a fresh clone of `c3ffd65` with a clean working tree and no reused
+Compose volumes. The documented port overrides were used because `5432` and `3000` are occupied
+on the host.
+
+```bash
+SENTINELPAY_POSTGRES_PORT=5433 \
+SENTINELPAY_REDIS_PORT=6380 \
+SENTINELPAY_KAFKA_PORT=19092 \
+SENTINELPAY_GRAFANA_PORT=3001 \
+docker compose up -d --wait
+
+./mvnw -q -DskipTests package
+
+SENTINELPAY_DB_URL=jdbc:postgresql://localhost:5433/sentinelpay \
+SENTINELPAY_REDIS_PORT=6380 \
+SENTINELPAY_KAFKA_BOOTSTRAP_SERVERS=localhost:19092 \
+./mvnw spring-boot:run
+```
+
+| Check | Result |
+| --- | --- |
+| Compose services | PostgreSQL, Redis, Kafka, Prometheus and Grafana all healthy |
+| Clean package | `BUILD SUCCESS`; 68 MB executable JAR |
+| Actuator health | `UP` |
+| Account creation | Two funded/unfunded INR accounts created |
+| Transfer | `201 POSTED`, 25,000 minor units; balances 975,000 and 25,000 |
+| Idempotent replay | `200` with `Idempotency-Replayed: true` |
+| Audit | `driftMinor: 0`, `transactionsBalanced: true` |
+| Async delivery | 5 outbox events `PROCESSED`; 5 `processed_kafka_events` rows |
+| Observability | Prometheus target `up = 1`; Grafana health `ok`; outbox pending gauge `0` |
+
+The clone and its Compose volumes were removed after the check.
+
 ## Post-run integrity
 
 After the load runs, the same global checks used by `LedgerInvariantIT` were replayed against the

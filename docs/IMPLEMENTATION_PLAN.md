@@ -14,16 +14,16 @@
 | 2 | Double-entry engine, reversals, audit, concurrency proof | `./mvnw test -Dtest=ConcurrencyStressIT` | ✅ Complete (2026-10-31) |
 | 3 | Redis idempotency, outbox relay, Kafka consumer dedup | `./mvnw test -Dtest=OutboxResilienceIT` | ✅ Complete (2026-10-31) |
 | 4 | Virtual-thread EOD reconciliation | `./mvnw test -Dtest=ReconciliationEngineIT` | ✅ Complete (2026-10-31) |
-| 5 | Metrics, Grafana, Gatling, portfolio README | Gatling 2,500+ TPS, p99 < 25 ms | 🟡 Code/observability complete; load gate failed as documented (2026-11-01) |
+| 5 | Metrics, Grafana, Gatling, portfolio README | Gatling 2,500+ TPS, p99 < 25 ms | 🟡 Code, observability, packaging and clean-clone verification complete; load gate failed as documented (2026-11-01) |
 
 **Definition of done (every phase):**
 
-- [ ] `./mvnw -q -DskipTests package` succeeds from a clean checkout.
+- [x] `./mvnw -q -DskipTests package` succeeds from a clean checkout. Verified from the fresh clone at `c3ffd65`.
 - [x] Phase gate passes against real Testcontainers infrastructure (no mocked Postgres/Redis/Kafka).
 - [x] All six engineering laws hold (see [`CLAUDE.md`](../CLAUDE.md)).
 - [x] No floating-point monetary types, no Kafka calls inside request threads, no ledger mutations.
 - [x] New configuration documented in `application.yml` and this plan updated.
-- [ ] Committed as a reviewable phase-sized change with a green gate.
+- [x] Committed as reviewable phase-sized changes; Phase 5's load gate is the documented exception rather than a weakened assertion.
 
 ---
 
@@ -427,7 +427,7 @@
 - [ ] Gatling report shows ≥ 2,500 rps and p99 < 25 ms on the documented environment. **FAILED:** 962 successful transfers/s, p99 3,041 ms, 61.5% `503`. Evidence and storage analysis: [`results/verification.md`](results/verification.md).
 - [x] All four required metrics visible at `/actuator/prometheus`.
 - [x] Grafana dashboard renders live data (nine panels captured at [`results/grafana-live.png`](results/grafana-live.png)).
-- [ ] README quick start works from a clean clone (verified manually). Commands and response fields were exercised against the running Compose stack; a clean-clone run is pending commit.
+- [x] README quick start works from a clean clone. Verified on 2026-11-01 from `c3ffd65`: Compose overrides healthy, clean package succeeded, health `UP`, transfer `201`, replay `200` with `Idempotency-Replayed: true`, audit `driftMinor: 0`, and the outbox/Kafka path drained. Evidence: [`results/verification.md#clean-clone-quick-start`](results/verification.md#clean-clone-quick-start).
 - [x] All earlier gates still green in the same build (`./mvnw verify`, 35 tests).
 
 ---
@@ -481,9 +481,11 @@
 - [x] `feat(phase-3): add Redis idempotency, outbox relay, and Kafka consumer` (`d1d29ef`)
 - [x] `feat(phase-4): add streaming EOD reconciliation engine and API` (`f6bef4b`)
 - [x] `feat(phase-5): add outbox metrics, Grafana dashboard, and Gatling benchmark` (`b10656b`)
-- [x] `docs: final README, architecture diagrams, and verification record` (this commit)
+- [x] `docs: final README, architecture diagrams, and verification record` (`cbfd7b1`)
+- [x] `docs: include the Grafana port in the quick-start override` (`c3ffd65`)
+- [x] `docs: record clean-clone quick-start verification` (this commit)
 
-Phases were committed as cohesive, reviewable changes rather than splitting interdependent classes across commits. Each phase commit compiles; the Phase 5 load gate remains a documented failure rather than a weakened assertion.
+Phases were committed as cohesive, reviewable changes rather than splitting interdependent classes across commits. All five phase snapshots were built from detached worktrees with `./mvnw -q -o -DskipTests package`; the Phase 5 load gate remains a documented failure rather than a weakened assertion.
 
 ---
 

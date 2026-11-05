@@ -158,6 +158,9 @@ returns `transactionId`, `idempotencyKey`, `status`, `amountMinor`, `currency`, 
 `destinationBalanceMinorAfter`, `createdAt`; the audit certificate returns `accountId`, `materializedBalanceMinor`,
 `ledgerBalanceMinor`, `driftMinor`, `entryCount`, `transactionsBalanced`, `checkedAt`.
 
+The complete clean-clone quick start, including the async outbox/Kafka path, is recorded in
+[`docs/results/verification.md`](docs/results/verification.md#clean-clone-quick-start).
+
 ## API
 
 | Method | Path | Purpose | Success |
