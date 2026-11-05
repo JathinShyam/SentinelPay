@@ -12,8 +12,12 @@ the MVP ([`IMPLEMENTATION_PLAN.md` §10](IMPLEMENTATION_PLAN.md#10-explicit-non-
 | Item | Why it matters | Exit criteria | Status |
 | --- | --- | --- | --- |
 | Immutable `transactions` envelope | The journal was guarded, but an unreferenced transaction row could still be deleted or rewritten. | `V3__immutable_transactions.sql` rejects `UPDATE`/`DELETE`; `SchemaMigrationIT` proves it. | ✅ Done |
-| cgroup-limited benchmark | Current numbers come from an unpinned 4-core / 8-thread laptop, so CPU and storage effects are mixed. | Run the unchanged Gatling simulation with explicit 4-vCPU container limits; store the report screenshot. | Open |
+| cgroup-limited benchmark | Current numbers come from an unpinned 4-core / 8-thread laptop, so CPU and storage effects are mixed. | Run the unchanged Gatling simulation with explicit 4-vCPU container limits; store the report screenshot. | ✅ Done 2026-11-05 — 4.0 vCPU budget, 431 successful/s, p99 3,224 ms; gate still fails. |
 | Load-gate decision | The assertion must not be silently relaxed; either the target is met on suitable hardware or the target is revised by a recorded decision. | Dedicated-host attempt with a separate load generator, or an ADR that supersedes the target with measured evidence. | Open |
+
+The cgroup run is recorded in [`results/verification.md`](results/verification.md#4-vcpu-container-limited-run)
+with the [report screenshot](results/gatling-cgroup-4vcpu.png) and
+[CPU-limit override](../docker/benchmark/docker-compose.cpu-limits.yml).
 
 ## 2. Performance and durability
 

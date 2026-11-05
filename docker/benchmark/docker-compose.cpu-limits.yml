@@ -1,0 +1,22 @@
+# Benchmark-only CPU budget: 4.0 vCPU total across the data plane.
+#
+# The application is not a Compose service in this repository. Run it with:
+#   docker run -d --name sentinelpay-bench-app --network host --cpus 2.5 ...
+# so the total is 2.5 (app) + 1.0 (Postgres) + 0.25 (Kafka) + 0.25 (Redis).
+#
+# The broker healthcheck is deliberately lightweight: the default admin-client
+# healthcheck needs more than 0.25 vCPU to start, while a TCP liveness check is
+# sufficient for the benchmark stack.
+services:
+  postgres:
+    cpus: 1.0
+  redis:
+    cpus: 0.25
+  kafka:
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/9092'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s

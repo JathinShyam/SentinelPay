@@ -14,7 +14,7 @@
 | 2 | Double-entry engine, reversals, audit, concurrency proof | `./mvnw test -Dtest=ConcurrencyStressIT` | ✅ Complete (2026-10-31) |
 | 3 | Redis idempotency, outbox relay, Kafka consumer dedup | `./mvnw test -Dtest=OutboxResilienceIT` | ✅ Complete (2026-10-31) |
 | 4 | Virtual-thread EOD reconciliation | `./mvnw test -Dtest=ReconciliationEngineIT` | ✅ Complete (2026-10-31) |
-| 5 | Metrics, Grafana, Gatling, portfolio README | Gatling 2,500+ TPS, p99 < 25 ms | 🟡 Code, observability, packaging and clean-clone verification complete; load gate failed as documented (2026-11-01) |
+| 5 | Metrics, Grafana, Gatling, portfolio README | Gatling 2,500+ TPS, p99 < 25 ms | 🟡 Code, observability, packaging, clean-clone verification and the 4-vCPU container-limited run are complete; the load gate failed as documented (2026-11-01 and 2026-11-05) |
 
 **Definition of done (every phase):**
 
@@ -403,7 +403,7 @@
 - [x] Test data setup: seed N funded accounts (e.g., 2,000) with generous balances; write a circular CSV feeder (`sourceAccountId`, `destinationAccountId`); unique `Idempotency-Key` per request.
 - [x] Scenario mix: 90% `POST /api/v1/transfers`, 10% `GET /api/v1/accounts/{id}/audit`; occasional insufficient-funds/duplicate-key branches to exercise error paths.
 - [ ] Load profile: ramp to **2,500 requests/sec** over 60s, hold for 120s; assert p99 < 25 ms, error rate < 0.1%, and achieved throughput ≥ 2,500 rps. **Implemented and run; gate FAILED (2026-11-01):** 300,000 sustained requests, 115,486 succeeded (962 successful transfers/s), 184,514 `503` (61.5%), p99 3,041 ms. Assertion left intact.
-- [ ] Run against a documented 4-vCPU environment with explicit container CPU limits; store the report screenshot (not the full HTML report) in the repo. Current evidence is from a documented 4-core / 8-thread host **without cgroup CPU pinning**; see [`results/verification.md`](results/verification.md).
+- [x] Run against a documented 4-vCPU environment with explicit container CPU limits; store the report screenshot (not the full HTML report) in the repo. **Done 2026-11-05:** 4.0 vCPU total (app 2.5, PostgreSQL 1.0, Kafka 0.25, Redis 0.25); 300,000 offered, 51,702 successful (431/s), 248,298 `503` (82.8%), p99 3,224 ms. The unchanged assertion still fails; evidence in [`results/verification.md`](results/verification.md#4-vcpu-container-limited-run) and [`results/gatling-cgroup-4vcpu.png`](results/gatling-cgroup-4vcpu.png).
 - [x] If the target is missed, tune Hikari pool/DB indexes/worker batch sizes and document the measured result honestly — do not relax the assertion silently. Pools 40/50/60/120 and listener concurrency were measured; storage is the ceiling.
 
 ```bash
@@ -425,7 +425,7 @@
 
 ### 6.5 Phase 5 gate
 
-- [ ] Gatling report shows ≥ 2,500 rps and p99 < 25 ms on the documented environment. **FAILED:** 962 successful transfers/s, p99 3,041 ms, 61.5% `503`. Evidence and storage analysis: [`results/verification.md`](results/verification.md).
+- [ ] Gatling report shows ≥ 2,500 rps and p99 < 25 ms on the documented environment. **FAILED:** 962 successful transfers/s, p99 3,041 ms, 61.5% `503` on the unconstrained host; **FAILED again under a 4.0-vCPU container budget:** 431 successful/s, p99 3,224 ms, 82.8% `503`. Evidence and storage analysis: [`results/verification.md`](results/verification.md).
 - [x] All four required metrics visible at `/actuator/prometheus`.
 - [x] Grafana dashboard renders live data (nine panels captured at [`results/grafana-live.png`](results/grafana-live.png)).
 - [x] README quick start works from a clean clone. Verified on 2026-11-01 from `c3ffd65`: Compose overrides healthy, clean package succeeded, health `UP`, transfer `201`, replay `200` with `Idempotency-Replayed: true`, audit `driftMinor: 0`, and the outbox/Kafka path drained. Evidence: [`results/verification.md#clean-clone-quick-start`](results/verification.md#clean-clone-quick-start).

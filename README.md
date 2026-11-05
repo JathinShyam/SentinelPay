@@ -253,6 +253,22 @@ Gatling's own throughput assertion printed 1,587 rps because it averages every s
 (including the 503s) over the full 189 s run. The honest successful-commit rate is
 `115,486 / 120 s = 962 rps`. The assertions were not relaxed.
 
+**4-vCPU container-limited check** — 2026-11-05, same simulation with a total 4.0 vCPU budget
+(app 2.5, PostgreSQL 1.0, Kafka 0.25, Redis 0.25; Gatling on the host):
+
+| Metric | Result |
+| --- | ---: |
+| Sustained requests offered | 300,000 in 120 s |
+| Successful requests | 51,702 (17.2%) |
+| Failed requests | 248,298 (82.8%, all `503`) |
+| Successful transfer throughput | **431 rps** |
+| p50 / p95 / p99 | **2,035 / 2,824 / 3,224 ms** |
+| Gate | **FAIL** — throughput, p99 and error rate targets missed |
+
+The report screenshot is [`docs/results/gatling-cgroup-4vcpu.png`](docs/results/gatling-cgroup-4vcpu.png)
+and the limits are in [`docker/benchmark/docker-compose.cpu-limits.yml`](docker/benchmark/docker-compose.cpu-limits.yml).
+Post-run integrity was clean: **0** drift, **0** unbalanced transactions, **0** pending outbox events.
+
 **Closed-loop capacity** — 10 concurrent clients, 45 s, same transfer endpoint:
 
 | Metric | Result |
@@ -291,14 +307,14 @@ Gatling report path and [Grafana screenshot](docs/results/grafana-live.png) are 
 - **The outbox relay holds a database transaction while waiting for Kafka acknowledgements.** This is bounded by batch size (500) and a 3-second per-batch send timeout. It is the price of keeping the request path free of Kafka I/O.
 - **One PostgreSQL primary.** There is no sharding or cross-region replication. The benchmark is a single-node result.
 - **No authentication, authorisation, fraud scoring, FX conversion or card-network integration.** Those are outside the ledger/settlement scope.
-- **Load target not met on this host.** The 2,500 rps / p99 < 25 ms assertion remains in the Gatling simulation and fails honestly on the documented laptop. The measured capacity and the exact failure are in the benchmark section; the target is realistic only on a dedicated host with fast durable storage and a separate load generator. See the risk note in [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md#8-risk-register).
+- **Load target not met on this host.** The 2,500 rps / p99 < 25 ms assertion remains in the Gatling simulation and fails honestly on the documented laptop and under the 4.0-vCPU container budget. The measured capacity and the exact failure are in the benchmark section; the target is realistic only on a dedicated host with fast durable storage and a separate load generator. See the risk note in [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md#8-risk-register).
 
 ## Roadmap
 
 The MVP is complete. [`docs/ROADMAP.md`](docs/ROADMAP.md) tracks the remaining load-gate decision,
-the cgroup-limited benchmark, production hardening (authentication, retention/partitioning,
-alerting and deployment) and ledger extensions. The 2,500 rps / p99 < 25 ms assertion stays in
-place until a recorded decision replaces it with measured evidence.
+production hardening (authentication, retention/partitioning, alerting and deployment) and ledger
+extensions. The cgroup-limited benchmark is complete and also failed honestly. The 2,500 rps /
+p99 < 25 ms assertion stays in place until a recorded decision replaces it with measured evidence.
 
 ## Operations
 

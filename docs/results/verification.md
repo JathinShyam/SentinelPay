@@ -1,6 +1,6 @@
 # SentinelPay verification record
 
-**Run date:** final suite 2026-11-05; benchmark 2026-10-31 to 2026-11-01 (Asia/Kolkata)
+**Run date:** final suite 2026-11-05; benchmark 2026-10-31 to 2026-11-05 (Asia/Kolkata)
 **Runtime:** Temurin JDK 21.0.13, Spring Boot 3.5.16, packaged executable JAR
 **Infrastructure:** PostgreSQL 17, Kafka 3.9.0 and Redis 7.4 in Docker; Testcontainers 2.0.3 for the suite
 **Host:** Intel Core i5-9300H (4 physical / 8 logical cores), 15.8 GB RAM, ext4 on NVMe
@@ -115,6 +115,47 @@ The three error-path requests passed as designed: duplicate create `201`, replay
 funds `422`. All 184,514 failed load requests were `503` responses caused by HikariCP connection
 acquisition timeouts while the database was saturated. The assertion was **not** relaxed.
 
+### 4-vCPU container-limited run
+
+Run on 2026-11-05 with the unchanged simulation and an explicit 4.0 vCPU container budget:
+
+| Container | CPU limit |
+| --- | ---: |
+| Application (`eclipse-temurin:21-jre-jammy`) | 2.50 |
+| PostgreSQL 17 | 1.00 |
+| Kafka 3.9 | 0.25 |
+| Redis 7.4 | 0.25 |
+| **Total** | **4.00** |
+
+Gatling ran on the host outside that budget, as the load generator. The data-plane limits are in
+[`docker/benchmark/docker-compose.cpu-limits.yml`](../../docker/benchmark/docker-compose.cpu-limits.yml);
+the app used `--network host --cpus 2.5` with the same JVM and pool settings as the reproduction
+commands below. The JVM reported an effective CPU count of 3 under that quota. The host remained
+shared with unrelated workload, so the quotas cap this stack but do not reserve physical cores.
+
+| Metric | Sustained phase | Gate | Result |
+| --- | ---: | ---: | --- |
+| Offered requests | 300,000 in 120 s | 2,500/s | offered |
+| Successful requests | 51,702 | — | **431 successful/s** |
+| Failed requests | 248,298 | < 0.1% | **82.8% failed** |
+| Mean completion throughput | 1,604.3 rps | ≥ 2,500 rps | **FAIL** |
+| p50 response time | 2,035 ms | — | — |
+| p95 response time | 2,824 ms | — | — |
+| p99 response time | 3,224 ms | < 25 ms | **FAIL** |
+| Global failed requests | 78.97% | < 0.1% | **FAIL** |
+
+The three error-path requests again passed. All failed load requests were `503` responses; there
+were no client-side connection errors in the retained run. Post-run checks found **0** accounts
+with balance/journal drift, **0** unbalanced transactions, and **0** pending outbox events.
+
+Screenshot: [`gatling-cgroup-4vcpu.png`](gatling-cgroup-4vcpu.png). Report (ignored):
+`target/gatling/ledgerchaossimulation-20261105183201006/index.html`.
+
+An initial allocation (app 1.5 vCPU, PostgreSQL 2.0) starved the app enough to hold roughly 28,000
+connections, exhaust the load generator's ephemeral ports, and produce `ConnectException` failures.
+That run was discarded. An intermediate run also recorded 1,011 client connection timeouts and was
+discarded; the reported run started at the final 2.5-vCPU quota and had none.
+
 ### Why the target fails on this host
 
 PostgreSQL is the bottleneck, and its commits are bounded by durable storage. `pg_test_fsync -s 2`
@@ -130,6 +171,8 @@ inside the PostgreSQL container measured:
 A durable transfer commit needs at least one WAL sync. Even with group commit, the observed
 ~960 successful commits/s is consistent with this ceiling. At 2,500 offered requests/s the fixed
 60-connection pool and 2 s acquisition timeout shed load instead of silently degrading durability.
+The 4-vCPU run also failed (431 successful/s, p99 3,224 ms); with 1.0 vCPU for PostgreSQL and 2.5
+for the app, CPU contention compounds the storage ceiling rather than changing the conclusion.
 
 Under no load, 20 sequential transfers measured p50 10 ms, p95 18 ms, max 35 ms. The p99 < 25 ms
 target is therefore plausible only with substantially faster durable storage or a different
@@ -201,5 +244,29 @@ java -Xms2g -Xmx4g -jar target/sentinelpay-0.0.1-SNAPSHOT.jar
 SENTINELPAY_GATLING_TARGET_RPS=800 \
 SENTINELPAY_GATLING_RAMP_SECONDS=20 \
 SENTINELPAY_GATLING_SUSTAIN_SECONDS=60 \
+./mvnw gatling:test -Dgatling.simulationClass=com.sentinelpay.gatling.LedgerChaosSimulation
+```
+
+### 4-vCPU container-limited reproduction
+
+```bash
+# Data plane: 1.0 (Postgres) + 0.25 (Kafka) + 0.25 (Redis) vCPU
+SENTINELPAY_POSTGRES_PORT=5433 \
+SENTINELPAY_REDIS_PORT=6380 \
+SENTINELPAY_KAFKA_PORT=19092 \
+docker compose -f docker-compose.yml \
+  -f docker/benchmark/docker-compose.cpu-limits.yml \
+  up -d --wait postgres redis kafka
+
+# Application: 2.5 vCPU, bringing the total to 4.0
+docker run -d --name sentinelpay-bench-app --network host --cpus 2.5 \
+  -e SENTINELPAY_DB_URL=jdbc:postgresql://localhost:5433/sentinelpay \
+  -e SENTINELPAY_DB_POOL_SIZE=60 \
+  -e SENTINELPAY_REDIS_PORT=6380 \
+  -e SENTINELPAY_KAFKA_BOOTSTRAP_SERVERS=localhost:19092 \
+  -v "$PWD/target/sentinelpay-0.0.1-SNAPSHOT.jar:/app.jar:ro" \
+  eclipse-temurin:21-jre-jammy java -Xms1g -Xmx2g -jar /app.jar
+
+# Unchanged Phase 5 gate
 ./mvnw gatling:test -Dgatling.simulationClass=com.sentinelpay.gatling.LedgerChaosSimulation
 ```
