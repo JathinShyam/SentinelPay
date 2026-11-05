@@ -21,9 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Phase 1 verification gate.
  *
  * <p>Runs Flyway against a real PostgreSQL 17 container and proves the schema's
- * non-negotiable invariants: both migrations apply, the outbox partial index exists,
+ * non-negotiable invariants: all migrations apply, the outbox partial index exists,
  * journal lines balance, system accounts can fund user wallets, and PostgreSQL itself
- * rejects UPDATE/DELETE on the ledger.
+ * rejects UPDATE/DELETE on the ledger and on transaction envelopes.
  */
 @Testcontainers
 class SchemaMigrationIT {
@@ -49,17 +49,17 @@ class SchemaMigrationIT {
                 .migrate();
 
         assertThat(result.migrationsExecuted)
-                .as("V1 and V2 must apply on an empty database")
-                .isEqualTo(2);
+                .as("V1, V2 and V3 must apply on an empty database")
+                .isEqualTo(3);
     }
 
     @Test
-    void flywayHistoryContainsBothVersionedMigrations() {
+    void flywayHistoryContainsEveryVersionedMigration() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank",
                 String.class);
 
-        assertThat(versions).containsExactly("1", "2");
+        assertThat(versions).containsExactly("1", "2", "3");
     }
 
     @Test
@@ -144,15 +144,24 @@ class SchemaMigrationIT {
     }
 
     @Test
-    void ledgerTriggerIsInstalledOnTheJournalTable() {
-        List<String> triggers = jdbc.queryForList("""
+    void immutabilityTriggersAreInstalledOnJournalsAndTransactions() {
+        List<String> ledgerTriggers = jdbc.queryForList("""
                 SELECT tgname
                 FROM pg_trigger
                 WHERE tgrelid = 'ledger_entries'::regclass
                   AND NOT tgisinternal
                 """, String.class);
 
-        assertThat(triggers).contains("trg_immutable_ledger");
+        assertThat(ledgerTriggers).contains("trg_immutable_ledger");
+
+        List<String> transactionTriggers = jdbc.queryForList("""
+                SELECT tgname
+                FROM pg_trigger
+                WHERE tgrelid = 'transactions'::regclass
+                  AND NOT tgisinternal
+                """, String.class);
+
+        assertThat(transactionTriggers).contains("trg_immutable_transactions");
     }
 
     @Test
@@ -204,6 +213,36 @@ class SchemaMigrationIT {
                 transfer.transactionId());
 
         assertThat(remaining).isEqualTo(2);
+    }
+
+    @Test
+    void transactionsCannotBeUpdatedOrDeleted() {
+        UUID transactionId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO transactions (transaction_id, idempotency_key, tx_type, status, currency)
+                VALUES (?, ?, 'TRANSFER', 'POSTED', 'INR')
+                """, transactionId, "immutable-" + transactionId);
+
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE transactions SET description = 'tampered' WHERE transaction_id = ?",
+                transactionId))
+                .as("Law 5 forbids rewriting a transaction envelope")
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("append-only");
+
+        assertThatThrownBy(() -> jdbc.update(
+                "DELETE FROM transactions WHERE transaction_id = ?",
+                transactionId))
+                .as("even an unreferenced transaction envelope must not be deleted")
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("append-only");
+
+        Integer remaining = jdbc.queryForObject(
+                "SELECT count(*) FROM transactions WHERE transaction_id = ?",
+                Integer.class,
+                transactionId);
+
+        assertThat(remaining).isEqualTo(1);
     }
 
     @Test
