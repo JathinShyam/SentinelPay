@@ -1,7 +1,9 @@
 # SentinelPay — Phase-Wise Checklist & Implementation Plan
 
-> **Companion to:** [`SPECIFICATION.md`](../SPECIFICATION.md) · **Status:** planning baseline (2026-10-29)
+> **Companion to:** [`SPECIFICATION.md`](../SPECIFICATION.md) · **Status:** planning baseline (2026-10-29), amended 2026-11-09 for session auth and the customer wallet
 > **Build protocol:** execute one phase at a time. Tick every box in the phase, run its verification gate, record the result, and only then start the next phase. Never weaken an invariant to make a gate pass.
+>
+> The phase records below are historical. The current final suite is **46 tests green in 62.0 s** on 2026-11-09; see [`results/verification.md`](results/verification.md) and [TDR-006](adr/TDR-006-session-auth-csrf.md).
 
 ---
 
@@ -15,6 +17,7 @@
 | 3 | Redis idempotency, outbox relay, Kafka consumer dedup | `./mvnw test -Dtest=OutboxResilienceIT` | ✅ Complete (2026-10-31) |
 | 4 | Virtual-thread EOD reconciliation | `./mvnw test -Dtest=ReconciliationEngineIT` | ✅ Complete (2026-10-31) |
 | 5 | Metrics, Grafana, Gatling, portfolio README | Gatling 2,500+ TPS, p99 < 25 ms | 🟡 Code, observability, packaging, clean-clone verification and the 4-vCPU container-limited run are complete; the load gate failed as documented (2026-11-01 and 2026-11-05) |
+| 6 | Session auth, CSRF, customer wallet, authenticated load path | `AuthIT`, `WalletReadIT`, authenticated smoke | ✅ Complete (2026-11-09); official load gate unchanged and still documented as failed |
 
 **Definition of done (every phase):**
 
@@ -361,7 +364,7 @@
 ./mvnw test -Dtest=ReconciliationEngineIT
 ```
 
-**Measured (2026-11-05, final 36-test run):** 100,000 records in **2,594 ms** (earlier runs measured 1,872 ms and 3,084 ms); 99,925 matched, 50 amount mismatches, 25 missing internal, 25 missing external; 100 persisted anomalies.
+**Measured (2026-11-09, final 46-test run):** 100,000 records in **2,209 ms** (the 2026-11-05 run measured 2,594 ms; earlier runs measured 1,872 ms and 3,084 ms); 99,925 matched, 50 amount mismatches, 25 missing internal, 25 missing external; 100 persisted anomalies.
 
 **Exit criteria:** gate green; no clearing file fully buffered in memory; virtual threads bounded by `Semaphore(50)`; anomalies persisted and queryable by run.
 
@@ -421,7 +424,7 @@
   - [x] Benchmark table: achieved TPS, p50/p95/p99, error rate, outbox lag, reconciliation duration, hardware.
   - [x] ADR links and explicit trade-offs/limitations.
 - [x] Commit Grafana dashboard JSON, Gatling simulation, and benchmark evidence. Committed in `b10656b` with the failure report screenshot and storage analysis under [`results/`](results/).
-- [x] Final full-suite run: `./mvnw verify` (or document the exact Surefire/Failsafe invocation for `*IT`). **36 tests green in 53.4 s** after adding the transaction-immutability, audit and dead-letter regressions; full record in [`results/verification.md`](results/verification.md).
+- [x] Final full-suite run: `./mvnw verify` (or document the exact Surefire/Failsafe invocation for `*IT`). **46 tests green in 62.0 s** after adding the auth, wallet-read, transaction-immutability, audit and dead-letter regressions; full record in [`results/verification.md`](results/verification.md).
 
 ### 6.5 Phase 5 gate
 
@@ -429,7 +432,7 @@
 - [x] All four required metrics visible at `/actuator/prometheus`.
 - [x] Grafana dashboard renders live data (nine panels captured at [`results/grafana-live.png`](results/grafana-live.png)).
 - [x] README quick start works from a clean clone. Verified on 2026-11-01 from `c3ffd65`: Compose overrides healthy, clean package succeeded, health `UP`, transfer `201`, replay `200` with `Idempotency-Replayed: true`, audit `driftMinor: 0`, and the outbox/Kafka path drained. Evidence: [`results/verification.md#clean-clone-quick-start`](results/verification.md#clean-clone-quick-start).
-- [x] All earlier gates still green in the same build (`./mvnw verify`, 36 tests).
+- [x] All earlier gates still green in the same build (`./mvnw verify`, 46 tests).
 
 ---
 
@@ -437,7 +440,7 @@
 
 | Test class | Phase | Infrastructure | Proves |
 | --- | --- | --- | --- |
-| `SchemaMigrationIT` | 1 | Postgres | Flyway clean apply (V1–V3), append-only triggers on journal and transactions, sign constraints, partial index |
+| `SchemaMigrationIT` | 1 | Postgres | Flyway clean apply (V1–V4), append-only triggers on journal and transactions, sign constraints, partial index |
 | `LedgerTransferIT` | 2 | Postgres | Double-entry posting, validations, DB idempotency |
 | `ReversalAuditIT` | 2 | Postgres | Compensating reversals, derived status, zero drift, cross-account transaction balance proof |
 | `LedgerInvariantIT` | 2 | Postgres | `balance_minor = SUM(entries)` for every account |
@@ -448,6 +451,8 @@
 | `OutboxDeadLetterIT` | 3 | Postgres + unreachable Kafka broker | Synchronous metadata failure → bounded retry → `DEAD_LETTER` |
 | `ReconciliationEngineIT` | 4 | Postgres | 100k records, 100 anomalies, < 5s |
 | `MetricsIT` | 5 | Full stack | Required Micrometer meters |
+| `AuthIT` | 6 | Full stack | Sessions, CSRF, ownership isolation, admin-only operations |
+| `WalletReadIT` | 6 | Postgres | Server-computed totals/proof, cursor activity, detail authorization |
 | `LedgerChaosSimulation` | 5 | Full stack + Gatling | 2,500+ rps at p99 < 25 ms |
 
 **Rule:** never mock Postgres, Redis, Kafka, or `JdbcClient` in these classes. If a test needs an outage, pause/proxy the real container.
@@ -492,15 +497,16 @@ Phases were committed as cohesive, reviewable changes rather than splitting inte
 
 ## 10. Explicit Non-Goals (Post-MVP)
 
-Out of scope unless a later phase explicitly adds it:
+Out of scope unless a later phase explicitly adds it. Session authentication, CSRF, role checks
+and the customer wallet were added after this plan (see TDR-006); the remaining items stand:
 
-- Authentication/authorization, API keys, OAuth2, tenant isolation.
+- OAuth2/SSO, API keys, MFA and tenant isolation.
 - Real bank/clearinghouse integrations and FX conversion.
 - Debezium CDC (polling outbox is the chosen approach).
 - Kafka transactions / exactly-once producer semantics (effectively-once is achieved via outbox + dedup).
 - Ledger/outbox retention, partitioning, archival (50M-row index behaviour is a design claim, not a tested SLA).
 - Kubernetes/Helm manifests, autoscaling, multi-region deployment.
-- UI/dashboard beyond Grafana.
+- An operator UI beyond Grafana; the customer wallet is now implemented.
 
 ---
 

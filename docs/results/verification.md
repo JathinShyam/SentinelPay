@@ -1,7 +1,7 @@
 # SentinelPay verification record
 
-**Run date:** final suite 2026-11-05; benchmark 2026-10-31 to 2026-11-05 (Asia/Kolkata)
-**Runtime:** Temurin JDK 21.0.13, Spring Boot 3.5.16, packaged executable JAR
+**Run date:** final suite 2026-11-09; benchmark 2026-10-31 to 2026-11-09 (Asia/Kolkata)
+**Runtime:** Temurin JDK 21.0.13, Spring Boot 3.5.16, packaged executable JAR (suite and benchmark); authenticated smoke used `spring-boot:run`
 **Infrastructure:** PostgreSQL 17, Kafka 3.9.0 and Redis 7.4 in Docker; Testcontainers 2.0.3 for the suite
 **Host:** Intel Core i5-9300H (4 physical / 8 logical cores), 15.8 GB RAM, ext4 on NVMe
 
@@ -14,27 +14,55 @@ The host is a shared laptop, not a dedicated benchmark machine. PostgreSQL durab
 ./mvnw verify
 ```
 
-Result: **BUILD SUCCESS — 36 tests, 0 failures, 0 errors, 0 skipped** in 53.4 s.
+Result: **BUILD SUCCESS — 46 tests, 0 failures, 0 errors, 0 skipped** in 62.0 s.
 
 | Test class | Tests | Time | Phase / gate |
 | --- | ---: | ---: | --- |
-| `SchemaMigrationIT` | 9 | 2.4 s | 1 — Flyway V1–V3, append-only journal and transaction triggers, D-1/D-2 constraints |
-| `LedgerTransferIT` | 7 | 0.3 s | 2 — double entry and request validation |
-| `ReversalAuditIT` | 5 | 13.7 s | 2 — compensating reversals, audit drift and cross-account balance proof |
-| `LedgerInvariantIT` | 1 | 0.7 s | 2 — global balance/journal invariant after mixed concurrency |
-| `ConcurrencyStressIT` | 2 | 0.9 s | 2 — overdraft race and deadlock freedom |
-| `IdempotencyIT` | 5 | 0.2 s | 3 — Redis replay, 409 conflicts, 5xx lock release |
-| `KafkaConsumerIT` | 2 | 1.9 s | 3 — at-least-once delivery and event dedup |
-| `OutboxResilienceIT` | 1 | 1.4 s | 3 — broker pause/recovery |
-| `OutboxDeadLetterIT` | 1 | 2.9 s | 3 — unreachable broker → `DEAD_LETTER` after one retry |
-| `ReconciliationEngineIT` | 2 | 24.9 s | 4 — 100,000 records, 100 anomalies, **2,594 ms** engine time |
-| `MetricsIT` | 1 | 0.1 s | 5 — required Micrometer families and tags |
+| `SchemaMigrationIT` | 9 | 2.4 s | 1 — Flyway V1–V4, append-only journal and transaction triggers, D-1/D-2 constraints |
+| `LedgerTransferIT` | 7 | 1.2 s | 2 — double entry and request validation |
+| `ReversalAuditIT` | 5 | 16.2 s | 2 — compensating reversals, audit drift and cross-account balance proof |
+| `LedgerInvariantIT` | 1 | 1.0 s | 2 — global balance/journal invariant after mixed concurrency |
+| `ConcurrencyStressIT` | 2 | 1.4 s | 2 — overdraft race and deadlock freedom |
+| `IdempotencyIT` | 5 | 0.7 s | 3 — Redis replay, 409 conflicts, 5xx lock release |
+| `KafkaConsumerIT` | 2 | 2.1 s | 3 — at-least-once delivery and event dedup |
+| `OutboxResilienceIT` | 1 | 1.7 s | 3 — broker pause/recovery |
+| `OutboxDeadLetterIT` | 1 | 3.0 s | 3 — unreachable broker → `DEAD_LETTER` after one retry |
+| `ReconciliationEngineIT` | 2 | 25.5 s | 4 — 100,000 records, 100 anomalies, **2,209 ms** engine time |
+| `MetricsIT` | 1 | 0.2 s | 5 — required Micrometer families and tags |
+| `AuthIT` | 6 | 2.1 s | 6 — sessions, CSRF, ownership isolation, admin-only operations |
+| `WalletReadIT` | 4 | 1.8 s | 7 — server-computed totals/proof, cursor activity, detail authorization |
 
 The `ReversalAuditIT` runtime includes the intentionally broken reversal envelope used by
 `IdempotencyIT`; its `500 INTERNAL_ERROR` is expected and proves that a server error releases the
 Redis idempotency lock. It is not a ledger failure.
 
+## Session authentication and wallet read gates (2026-11-09)
+
+`AuthIT` (6 tests) exercises the real Spring Security filter chain:
+
+| Case | Assertion |
+| --- | --- |
+| Registration, login, logout lifecycle | `201` registration, session-backed `200 /auth/me`, `204` logout, then `401` |
+| Unauthenticated and CSRF-less requests | `401 UNAUTHENTICATED` and `403 FORBIDDEN` as RFC 7807 problems |
+| Duplicate usernames | Case-insensitive `409 USERNAME_TAKEN` |
+| Authenticated mutations | A valid `X-XSRF-TOKEN` is mandatory; session refresh after login works |
+| Ownership isolation | A customer cannot read or spend from another customer's account; foreign IDs return `404` |
+| Admin surface | Reversal and reconciliation return `403` for customers and succeed for `ROLE_ADMIN` |
+
+`WalletReadIT` (4 tests) verifies that the wallet never has to calculate money:
+
+| Case | Assertion |
+| --- | --- |
+| Overview | Per-currency totals, owner accounts, recent activity and proof are computed server-side |
+| Statement | Newest-first, stable opaque cursor pagination over the owner's journal |
+| Transaction detail | Balanced debit/credit entries; counterparty running balances are masked from non-admins |
+| Cross-customer isolation | Another customer receives `404` for the account statement and transaction detail; admin can inspect both |
+
+The Gatling simulation was also migrated to real sessions. It pre-warms 64 `JSESSIONID` + `XSRF-TOKEN` pairs, writes them into the feeder, and sends a matching `X-XSRF-TOKEN` header on every measured transfer and audit. The authenticated smoke result is recorded under [Phase 5 benchmark](#phase-5-benchmark-pre-authentication).
+
 ## Clean-clone quick start
+
+This check was recorded on 2026-11-01 and predates session authentication. The current auth-aware quick start is in the [README](../../README.md#quick-start); the ledger results below remain valid.
 
 Verified on 2026-11-01 from a fresh clone of `c3ffd65` with a clean working tree and no reused
 Compose volumes. The documented port overrides were used because `5432` and `3000` are occupied
@@ -83,7 +111,12 @@ benchmark database:
 Load shedding therefore returned explicit `503 DEPENDENCY_UNAVAILABLE` responses; it did not leave
 partial postings or drift.
 
-## Phase 5 benchmark
+## Phase 5 benchmark (pre-authentication)
+
+The official gate and capacity numbers in this section were measured before session authentication
+was added. The current API runs an additional servlet session lookup and Spring Security filter
+chain on every request. The 2,500 rps / p99 < 25 ms assertions remain unchanged; the authenticated
+path is validated separately in [Authenticated-path smoke](#authenticated-path-smoke-2026-11-09).
 
 ### Official gate: 2,500 rps target
 
@@ -155,6 +188,41 @@ An initial allocation (app 1.5 vCPU, PostgreSQL 2.0) starved the app enough to h
 connections, exhaust the load generator's ephemeral ports, and produce `ConnectException` failures.
 That run was discarded. An intermediate run also recorded 1,011 client connection timeouts and was
 discarded; the reported run started at the final 2.5-vCPU quota and had none.
+
+### Authenticated-path smoke (2026-11-09)
+
+The simulation now seeds a `gatling-smoke` customer, registers accounts through real sessions, and
+pre-warms 64 `JSESSIONID` + `XSRF-TOKEN` pairs into `target/gatling/sentinelpay-accounts.csv`.
+Every measured request carries the session cookie and the matching `X-XSRF-TOKEN` header. This smoke
+uses a deliberately small validation profile, not the official gate:
+
+```bash
+SENTINELPAY_GATLING_ACCOUNTS=200 \
+SENTINELPAY_GATLING_TARGET_RPS=20 \
+SENTINELPAY_GATLING_RAMP_SECONDS=2 \
+SENTINELPAY_GATLING_SUSTAIN_SECONDS=4 \
+SENTINELPAY_GATLING_USERNAME=gatling-smoke \
+SENTINELPAY_GATLING_PASSWORD=gatling-smoke-password \
+SENTINELPAY_GATLING_REUSE_FEEDER=false \
+./mvnw gatling:test -Dgatling.simulationClass=com.sentinelpay.gatling.LedgerChaosSimulation
+```
+
+Report: `target/gatling/ledgerchaossimulation-20261109161036819/index.html` (ignored).
+
+| Metric | Result |
+| --- | ---: |
+| Ramp requests | 21, all OK |
+| Sustained requests | 80, all OK |
+| Error-path requests | 3, all OK: duplicate create `201`, replay `200`, insufficient funds `422` |
+| Overall failed requests | **0 / 104** |
+| Sustained `Cnt/s` | 11.43 (Gatling divides by the full run, including ramp and error phase) |
+| p50 / p95 / p99 | 23 / 28 / 35 ms |
+| Gate assertions | **KO** for 20 rps and p99 < 25 ms; the official 2,500 rps assertions were not changed |
+
+The app was started with `spring-boot:run`, which pins `-XX:TieredStopAtLevel=1` (C1 only); the
+official benchmark used a packaged JAR with default JIT. This run proves the authenticated request
+path under concurrency, not the capacity gate. The pre-authentication gate evidence above remains
+the authoritative capacity record.
 
 ### Why the target fails on this host
 
@@ -237,7 +305,8 @@ java -Xms2g -Xmx4g -jar target/sentinelpay-0.0.1-SNAPSHOT.jar
 # Full suite (real Testcontainers Postgres, Redis and Kafka)
 ./mvnw verify
 
-# Official Phase 5 gate
+# Official Phase 5 gate. The simulation now authenticates with real sessions;
+# the capacity numbers above were measured before that change.
 ./mvnw gatling:test -Dgatling.simulationClass=com.sentinelpay.gatling.LedgerChaosSimulation
 
 # Below-capacity profile
@@ -246,6 +315,11 @@ SENTINELPAY_GATLING_RAMP_SECONDS=20 \
 SENTINELPAY_GATLING_SUSTAIN_SECONDS=60 \
 ./mvnw gatling:test -Dgatling.simulationClass=com.sentinelpay.gatling.LedgerChaosSimulation
 ```
+
+On first use the simulation registers the default load user `gatling` / `gatling-password`, then
+pre-warms 64 sessions and seeds `target/gatling/sentinelpay-accounts.csv`. Later runs log in again
+and can reuse the accounts. Use `SENTINELPAY_GATLING_USERNAME`, `..._PASSWORD`, `..._ACCOUNTS` and
+`..._REUSE_FEEDER` to override that setup.
 
 ### 4-vCPU container-limited reproduction
 
@@ -267,6 +341,6 @@ docker run -d --name sentinelpay-bench-app --network host --cpus 2.5 \
   -v "$PWD/target/sentinelpay-0.0.1-SNAPSHOT.jar:/app.jar:ro" \
   eclipse-temurin:21-jre-jammy java -Xms1g -Xmx2g -jar /app.jar
 
-# Unchanged Phase 5 gate
+# Same simulation shape, now with real authenticated sessions
 ./mvnw gatling:test -Dgatling.simulationClass=com.sentinelpay.gatling.LedgerChaosSimulation
 ```

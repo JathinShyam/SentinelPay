@@ -482,9 +482,19 @@ Payment processors and fintech platforms fail under high concurrency when networ
 
 ### 8.2 REST API Contracts
 
+#### REST API security
+
+All endpoints except `GET /api/v1/auth/csrf`, `POST /api/v1/auth/login` and
+`POST /api/v1/auth/register` require an authenticated `JSESSIONID` session. Mutating requests must
+also send `X-XSRF-TOKEN` matching the `XSRF-TOKEN` cookie. Account ownership is derived from the
+session, never from request JSON; foreign customer resources return `404` so their existence cannot
+be probed. Reversal and reconciliation require `ROLE_ADMIN`.
+
 #### `POST /api/v1/transfers`
 
 * **Required Headers:**
+  * `Cookie`: authenticated `JSESSIONID` and `XSRF-TOKEN`
+  * `X-XSRF-TOKEN`: token from `GET /api/v1/auth/csrf`
   * `Idempotency-Key`: `String` (UUID or 16–128 char unique client token)
   * `Content-Type`: `application/json`
 
@@ -517,10 +527,16 @@ Payment processors and fintech platforms fail under high concurrency when networ
 
 #### Additional Core Endpoints
 
-* `POST /api/v1/accounts` → Creates an account (`ownerId`, `currency`, `initialDepositMinor` via system clearing account).
-* `POST /api/v1/transactions/{transactionId}/reverse` → Executes a compensating double-entry reversal (`Idempotency-Key` required).
+* `GET /api/v1/auth/csrf` → Issues or refreshes the CSRF token and cookie (public).
+* `POST /api/v1/auth/register` → Creates a customer account (public; username unique, case-insensitive).
+* `POST /api/v1/auth/login` → Starts a session; `POST /api/v1/auth/logout`, `GET /api/v1/auth/me` complete the lifecycle.
+* `POST /api/v1/accounts` → Creates an account owned by the session (`currency`, `initialDepositMinor` via system clearing account).
+* `GET /api/v1/me/accounts`, `GET /api/v1/me/overview` → Owner's accounts plus server-computed totals, activity and proof.
+* `GET /api/v1/accounts/{accountId}/transactions` → Cursor-paginated statement for an owned account.
+* `GET /api/v1/transactions/{transactionId}` → Balanced detail with counterparty running balances masked from non-admins.
+* `POST /api/v1/transactions/{transactionId}/reverse` → Executes a compensating double-entry reversal (`ROLE_ADMIN`, `Idempotency-Key` required).
 * `GET /api/v1/accounts/{accountId}/audit` → Computes live sum of `ledger_entries` vs `accounts.balance_minor` and returns an integrity certificate.
-* `POST /api/v1/reconciliation/run` → Accepts an NDJSON/CSV clearing file and runs the Java Virtual Thread reconciliation batch, returning a summary report ID.
+* `POST /api/v1/reconciliation/run` → Accepts an NDJSON/CSV clearing file and runs the Java Virtual Thread reconciliation batch, returning a summary report ID (`ROLE_ADMIN`).
 
 ### 8.3 Error Taxonomy (RFC 7807 `ProblemDetail`)
 
@@ -557,11 +573,17 @@ sentinelpay/
 │   └── adr/                           # TDR-001 through TDR-005 markdown files
 ├── src/main/resources/
 │   ├── application.yml                # Virtual threads enabled, HikariCP tuning, Kafka config
+│   ├── static/                        # Built React customer wallet
 │   └── db/migration/
 │       ├── V1__init_ledger_schema.sql # Accounts, Transactions, LedgerEntries, OutboxEvents + Trigger
-│       └── V2__init_reconciliation_schema.sql # EOD Settlement batches & discrepancy tables
+│       ├── V2__init_reconciliation_schema.sql # EOD Settlement batches & discrepancy tables
+│       └── V4__app_users.sql          # Customers, roles, status and password hashes
+├── frontend/                          # React 19 + Vite 7 + TypeScript wallet
 ├── src/main/java/com/sentinelpay/
 │   ├── SentinelPayApplication.java
+│   ├── auth/                          # users, sessions, CSRF, admin bootstrap
+│   ├── wallet/                        # server-computed overview, activity, proof
+│   ├── web/                           # SPA forwarding
 │   ├── common/
 │   │   ├── exception/                 # GlobalExceptionHandler (RFC 7807 ProblemDetail)
 │   │   └── idempotency/               # RedisIdempotencyFilter & Aspect
@@ -610,6 +632,7 @@ Full documents live in [`docs/adr/`](docs/adr/):
 | TDR-003 | Polling Transactional Outbox with `FOR UPDATE SKIP LOCKED` vs. Two-Phase Commit (XA) | [`docs/adr/TDR-003-transactional-outbox-vs-xa.md`](docs/adr/TDR-003-transactional-outbox-vs-xa.md) |
 | TDR-004 | Database-Level Immutability Triggers on `ledger_entries` | [`docs/adr/TDR-004-append-only-ledger-trigger.md`](docs/adr/TDR-004-append-only-ledger-trigger.md) |
 | TDR-005 | Java 21+ Virtual Threads (`JEP 444`) for I/O-Heavy EOD Reconciliation | [`docs/adr/TDR-005-virtual-threads-reconciliation.md`](docs/adr/TDR-005-virtual-threads-reconciliation.md) |
+| TDR-006 | Server-Side Sessions and CSRF for the Customer Wallet | [`docs/adr/TDR-006-session-auth-csrf.md`](docs/adr/TDR-006-session-auth-csrf.md) |
 
 ### 10.1 TDR-001: Storing Monetary Values as Signed `BIGINT` Minor Units
 
@@ -640,6 +663,12 @@ Full documents live in [`docs/adr/`](docs/adr/):
 * **Context:** Reconciling 100,000+ bank settlement lines requires thousands of concurrent database batch lookups and file I/O operations. Platform thread pools either exhaust OS memory or bottleneck on thread pool queues.
 * **Decision:** Enable `spring.threads.virtual.enabled=true` and run EOD settlement chunk workers on `Executors.newVirtualThreadPerTaskExecutor()`, bounded by a `Semaphore(50)` to protect the HikariCP database connection pool.
 * **Consequence:** High I/O concurrency with minimal heap overhead while preventing connection pool starvation.
+
+### 10.6 TDR-006: Server-Side Sessions and CSRF for the Customer Wallet
+
+* **Context:** The API previously trusted a caller-supplied `ownerId` and had no authentication. The customer wallet needs a real identity, browser-safe credential storage, logout and an operator-only surface without adding an external identity provider.
+* **Decision:** Use Spring Security servlet sessions with an `HttpOnly` `JSESSIONID`, a `XSRF-TOKEN` cookie echoed in `X-XSRF-TOKEN`, BCrypt passwords, session-derived account ownership, `ROLE_ADMIN` for reversals/reconciliation, and `404` for foreign customer resources.
+* **Consequence:** No token storage or refresh logic in the browser and server-side revocation, at the cost of CSRF handling, login-time token rotation and a shared session store for multi-instance deployment. OAuth2, API keys and MFA remain future work.
 
 ---
 

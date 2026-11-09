@@ -39,7 +39,8 @@ to make the gate pass.
 
 These are the highest-value items before any real deployment:
 
-- Authentication and authorization, API keys, OAuth2 and tenant isolation.
+- OAuth2/SSO, API keys, MFA and tenant isolation on top of the existing session auth.
+- A shared session store (Spring Session Redis) or sticky sessions for multi-instance deployment.
 - Retention and partitioning for `outbox_events` and `processed_kafka_events`; ledger and
   transaction history stay permanent.
 - Alerting and SLOs on top of the existing Prometheus metrics and Grafana dashboard.

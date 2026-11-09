@@ -1,0 +1,18 @@
+# TDR-006: Server-Side Sessions and CSRF for the Customer Wallet
+
+* **Status:** Accepted
+* **Context:** The ledger API originally trusted an `ownerId` supplied by the caller and had no authentication, so any client could read or move another customer's money. The customer wallet needs a real signed-in identity, browser-safe credential storage, logout, and an operator-only path for reversals and reconciliation. A bearer token in `localStorage` would expose credentials to XSS and require custom revocation; an external OIDC provider would add an identity service that is outside this repository's scope.
+* **Decision:** Use Spring Security servlet sessions for browser clients. Login creates an `HttpOnly` `JSESSIONID`; mutating requests require the `XSRF-TOKEN` cookie echoed in the `X-XSRF-TOKEN` header. Passwords are BCrypt-hashed. Account ownership comes from the authenticated principal, never from request JSON. `ROLE_ADMIN` is required for reversals and reconciliation, and foreign account or transaction identifiers return `404` so their existence cannot be probed.
+* **Consequence:** The wallet needs no token storage or refresh logic, and revocation is a server-side session invalidation. Every mutating browser request must carry a CSRF token, login rotates that token, and multi-instance deployments need sticky sessions or a shared session store such as Spring Session Redis. Non-browser API clients must use the cookie/header contract; OAuth2, API keys and MFA remain future work.
+
+---
+
+## Enforcement in SentinelPay
+
+* **Filter chains** — [`SecurityConfig`](../../src/main/java/com/sentinelpay/auth/config/SecurityConfig.java) secures `/api/**` with `IF_REQUIRED` sessions, `CookieCsrfTokenRepository.withHttpOnlyFalse()` and a JSON entry point/denied handler. A second chain permits the SPA shell. [`AuthCoreConfig`](../../src/main/java/com/sentinelpay/auth/config/AuthCoreConfig.java) keeps the password encoder and method security outside servlet-only tests.
+* **Public surface** — only `GET /api/v1/auth/csrf`, `POST /api/v1/auth/login` and `POST /api/v1/auth/register` are anonymous. Everything else under `/api/**` requires a session.
+* **Identity and roles** — `V4__app_users.sql`, `AppUser`, `AppUserDetailsService` and `AuthenticatedUser` load the user, role and status. `AdminBootstrap` creates one administrator only when `SENTINELPAY_ADMIN_USERNAME` and `SENTINELPAY_ADMIN_PASSWORD` are supplied.
+* **Ownership** — [`AccountAccessService`](../../src/main/java/com/sentinelpay/ledger/service/AccountAccessService.java) and [`WalletService`](../../src/main/java/com/sentinelpay/wallet/service/WalletService.java) derive visibility from the session. `CreateAccountRequest` no longer accepts `ownerId`; `GET /api/v1/owners/{ownerId}/accounts` was replaced by `GET /api/v1/me/accounts`.
+* **CSRF rotation** — Spring Security rotates the token on login. The frontend refreshes `GET /api/v1/auth/csrf` after login and on a `403` CSRF failure; `TestClient` does the same for integration tests.
+* **No request-thread Kafka** — authentication is a database read and password check only. The outbox relay still owns all Kafka I/O.
+* **Verification** — [`AuthIT`](../../src/test/java/com/sentinelpay/AuthIT.java) covers registration, login/logout, `/me`, unauthenticated `401`, missing CSRF `403`, duplicate usernames, ownership isolation and admin-only operations. [`WalletReadIT`](../../src/test/java/com/sentinelpay/WalletReadIT.java) covers server-computed totals and proof, cursor pagination, transaction-detail authorization and admin visibility. The Gatling simulation pre-warms real sessions and sends `JSESSIONID` plus the CSRF header on every measured request.
