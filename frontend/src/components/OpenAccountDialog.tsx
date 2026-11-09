@@ -80,7 +80,7 @@ export function OpenAccountDialog({ onClose }: { onClose: () => void }) {
       <div className="detail__sheet">
         <header className="detail__head">
           <div>
-            <p className="folio">New folio</p>
+            <p className="folio">New account</p>
             <h2 id="open-account-title">Open an account</h2>
           </div>
           <button type="button" className="icon-button" onClick={close} aria-label="Close">
@@ -134,10 +134,11 @@ export function OpenAccountDialog({ onClose }: { onClose: () => void }) {
               value={deposit}
               onChange={(event) => setDeposit(event.target.value)}
               placeholder="0.00"
+              autoComplete="off"
             />
             <span className="field__hint">
-              Funded from the ledger's system reserve account. This is simulated funding
-              for the demo environment.
+              Funded from the ledger's system reserve account. This is simulated funding for
+              the demo environment.
             </span>
           </label>
 

@@ -8,14 +8,15 @@ import { PageHeader } from '../components/PageHeader';
 import { LedgerTable } from '../components/LedgerTable';
 import { OpenAccountDialog } from '../components/OpenAccountDialog';
 import { TransactionDetailDialog } from '../components/TransactionDetailDialog';
+import { accountLabel } from '../components/accounts';
 import {
   EmptyState,
   ErrorNotice,
   LoadingBlock,
-  Seal,
+  StatusMark,
   StatusTag,
 } from '../components/ui';
-import { AlertIcon, CheckIcon, ChevronRightIcon, PlusIcon } from '../components/icons';
+import { PlusIcon } from '../components/icons';
 import { formatMinor, shortId, todayLabel } from '../format';
 
 function greeting(): string {
@@ -51,7 +52,7 @@ export function OverviewPage() {
   if (error || !data) {
     return (
       <>
-        <PageHeader folio={`Statement · ${todayLabel()}`} title="Your ledger" />
+        <PageHeader folio="Statement" meta={todayLabel()} title="Your ledger" />
         <ErrorNotice>
           {error instanceof Error ? error.message : 'The ledger could not be read.'}
           <button type="button" className="text-button" onClick={() => void refetch()}>
@@ -65,17 +66,20 @@ export function OverviewPage() {
   const accounts = ordered(data.accounts);
   const hasAccounts = accounts.length > 0;
   const balanced = data.proof.balanced;
+  const accountWord = data.proof.accountsChecked === 1 ? 'account' : 'accounts';
+  const entryWord = data.proof.entryCount === 1 ? 'entry' : 'entries';
 
   return (
     <>
       <PageHeader
-        folio={`Statement · ${todayLabel()}`}
+        folio="Statement"
+        meta={todayLabel()}
         title={`${greeting()}, ${firstName}.`}
-        lede="Your balances, postings and proof — all in one ledger."
+        lede="Balances, postings and proof in one ledger."
         actions={
           hasAccounts ? (
             <button type="button" className="btn btn--ghost" onClick={() => setOpenAccount(true)}>
-              <PlusIcon width={17} height={17} />
+              <PlusIcon width={16} height={16} />
               Open account
             </button>
           ) : undefined
@@ -84,61 +88,69 @@ export function OverviewPage() {
 
       {hasAccounts ? (
         <>
-          <section className="balance-band" aria-label="Balances">
-            <div className="balance-band__totals">
+          <section className="balance" aria-label="Balances">
+            <div className="balance__totals">
               {data.totals.map((total) => (
-                <div className="balance-band__item" key={total.currency}>
-                  <span className="balance-band__label">{total.currency} balance</span>
-                  <span className="balance-band__value money">
-                    {formatMinor(total.balanceMinor, total.currency)}
-                  </span>
+                <div className="balance__item" key={total.currency}>
+                  <span className="balance__code">{total.currency}</span>
+                  <span className="balance__value">{formatMinor(total.balanceMinor, total.currency)}</span>
                 </div>
               ))}
             </div>
-            <Seal
-              state={balanced ? 'balanced' : 'attention'}
-              label={balanced ? 'Balanced' : 'Attention'}
-              detail={balanced ? 'journal verified' : 'drift found'}
-            />
+
+            <div className={`balance__status${balanced ? '' : ' balance__status--attention'}`}>
+              <StatusMark ok={balanced} />
+              <div className="balance__status-copy">
+                <p className="balance__status-title">
+                  {balanced ? 'Journal balanced' : 'Journal needs attention'}
+                </p>
+                <p className="balance__status-note">
+                  {balanced
+                    ? `${data.proof.accountsChecked} ${accountWord} and ${data.proof.entryCount} ${entryWord} checked.`
+                    : `A difference of ${formatMinor(
+                        data.proof.driftMinor,
+                        data.totals[0]?.currency ?? 'INR',
+                      )} was found.`}
+                </p>
+              </div>
+              <Link className="text-link" to="/wallet/proof">
+                Read proof
+              </Link>
+            </div>
           </section>
 
           <section className="section" aria-labelledby="accounts-title">
             <div className="section-heading">
               <div>
                 <h2 id="accounts-title">Accounts</h2>
-                <p>Each account has its own currency and statement.</p>
+                <p>Each account keeps one currency and its own statement.</p>
               </div>
-              <button type="button" className="text-button" onClick={() => setOpenAccount(true)}>
-                <PlusIcon width={16} height={16} />
-                New account
-              </button>
+              <span className="section-heading__note">
+                {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
+              </span>
             </div>
 
-            <div className="folios">
-              {accounts.map((account, index) => (
-                <article className="folio-card" key={account.accountId}>
-                  <div className="folio-card__top">
-                    <span className="folio-card__no">
-                      Folio {String(index + 1).padStart(2, '0')}
-                    </span>
+            <div className="account-list">
+              {accounts.map((account) => (
+                <div className="account-row" key={account.accountId}>
+                  <span className="account-row__code mono">{account.currency}</span>
+                  <div className="account-row__name">
+                    <span>{accountLabel(account, accounts)}</span>
+                    <span className="account-row__id mono">{shortId(account.accountId)}</span>
+                  </div>
+                  <span className="account-row__status">
                     <StatusTag status={account.status} />
-                  </div>
-                  <p className="folio-card__currency">{account.currency}</p>
-                  <p className="folio-card__label">Account {index + 1}</p>
-                  <p className="folio-card__balance money">
+                  </span>
+                  <span className="account-row__balance">
                     {formatMinor(account.balanceMinor, account.currency)}
-                  </p>
-                  <div className="folio-card__foot">
-                    <span className="mono folio-card__id">{shortId(account.accountId)}</span>
-                    <Link
-                      className="text-link"
-                      to={`/wallet/activity?account=${account.accountId}`}
-                    >
-                      Statement
-                      <ChevronRightIcon width={15} height={15} />
-                    </Link>
-                  </div>
-                </article>
+                  </span>
+                  <Link
+                    className="account-row__link text-link"
+                    to={`/wallet/activity?account=${account.accountId}`}
+                  >
+                    Statement
+                  </Link>
+                </div>
               ))}
             </div>
           </section>
@@ -151,7 +163,6 @@ export function OverviewPage() {
               </div>
               <Link className="text-link" to="/wallet/activity">
                 Full statement
-                <ChevronRightIcon width={15} height={15} />
               </Link>
             </div>
 
@@ -167,30 +178,23 @@ export function OverviewPage() {
             )}
           </section>
 
-          <section
-            className={`proof-strip${balanced ? '' : ' proof-strip--attention'}`}
-            aria-labelledby="proof-strip-title"
-          >
-            <span className="proof-strip__icon" aria-hidden="true">
-              {balanced ? <CheckIcon width={20} height={20} /> : <AlertIcon width={20} height={20} />}
-            </span>
-            <div className="proof-strip__copy">
-              <h2 id="proof-strip-title">
-                {balanced ? 'The journal balances' : 'The journal needs attention'}
+          <section className={`journal-note${balanced ? '' : ' journal-note--attention'}`} aria-labelledby="journal-note-title">
+            <StatusMark ok={balanced} />
+            <div className="journal-note__copy">
+              <h2 id="journal-note-title">
+                {balanced ? 'Kept as posted' : 'Attention required'}
               </h2>
               <p>
                 {balanced
-                  ? `${data.proof.accountsChecked} account${
-                      data.proof.accountsChecked === 1 ? '' : 's'
-                    } and ${data.proof.entryCount} journal entr${
-                      data.proof.entryCount === 1 ? 'y' : 'ies'
-                    } checked. Stored balances match the ledger.`
-                  : `A difference of ${data.proof.driftMinor} minor units was found. Inspect the proof before moving money.`}
+                  ? 'Balances are built from posted entries, not typed in. Nothing is edited or deleted; a correction is a new reversal.'
+                  : `A difference of ${formatMinor(
+                      data.proof.driftMinor,
+                      data.totals[0]?.currency ?? 'INR',
+                    )} was found. Inspect the proof before moving money.`}
               </p>
             </div>
             <Link className="text-link" to="/wallet/proof">
-              Inspect proof
-              <ChevronRightIcon width={15} height={15} />
+              Read the proof
             </Link>
           </section>
         </>
@@ -199,14 +203,14 @@ export function OverviewPage() {
           title="Open your first account"
           action={
             <button type="button" className="btn btn--primary" onClick={() => setOpenAccount(true)}>
-              <PlusIcon width={17} height={17} />
+              <PlusIcon width={16} height={16} />
               Open an account
             </button>
           }
         >
           <p>
-            A SentinelPay account keeps one currency and a full statement of every
-            posting. You can open an INR, USD or EUR account now.
+            A SentinelPay account keeps one currency and a full statement of every posting.
+            You can open an INR, USD or EUR account now.
           </p>
         </EmptyState>
       )}

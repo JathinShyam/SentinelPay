@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
@@ -15,6 +15,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   if (status === 'authenticated') {
     return <Navigate to={from} replace />;
@@ -23,8 +25,14 @@ export function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    if (!username.trim() || !password) {
-      setError('Enter your username and password.');
+    if (!username.trim()) {
+      setError('Enter your username.');
+      usernameRef.current?.focus();
+      return;
+    }
+    if (!password) {
+      setError('Enter your password.');
+      passwordRef.current?.focus();
       return;
     }
     setPending(true);
@@ -47,11 +55,9 @@ export function LoginPage() {
   return (
     <GateLayout>
       <div className="gate__form-inner">
-        <p className="folio">Customer access</p>
         <h2>Sign in</h2>
         <p className="gate__form-lede">
-          Use the username you registered. Your session ends after 30 minutes of
-          inactivity.
+          Use the username you registered. Your session ends after 30 minutes of inactivity.
         </p>
 
         {error ? <ErrorNotice>{error}</ErrorNotice> : null}
@@ -66,6 +72,7 @@ export function LoginPage() {
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
+              ref={usernameRef}
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               aria-invalid={error ? true : undefined}
@@ -79,6 +86,7 @@ export function LoginPage() {
               type="password"
               name="password"
               autoComplete="current-password"
+              ref={passwordRef}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               aria-invalid={error ? true : undefined}

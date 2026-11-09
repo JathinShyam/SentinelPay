@@ -9,11 +9,11 @@ import {
   EmptyState,
   ErrorNotice,
   LoadingBlock,
-  Seal,
+  StatusMark,
   StatusTag,
 } from '../components/ui';
 import { RefreshIcon } from '../components/icons';
-import { formatDateTime, formatMinor, shortId } from '../format';
+import { formatDateTime, formatMinor } from '../format';
 
 function ordered(accounts: Account[]): Account[] {
   return [...accounts].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -42,7 +42,7 @@ export function ProofPage() {
   if (accountsQuery.error) {
     return (
       <>
-        <PageHeader folio="Audit certificate" title="Proof" />
+        <PageHeader folio="Certificate" title="Proof" />
         <ErrorNotice>
           {accountsQuery.error instanceof Error
             ? accountsQuery.error.message
@@ -55,7 +55,7 @@ export function ProofPage() {
   if (accounts.length === 0) {
     return (
       <>
-        <PageHeader folio="Audit certificate" title="Proof" />
+        <PageHeader folio="Certificate" title="Proof" />
         <EmptyState
           title="Nothing to certify yet"
           action={
@@ -65,8 +65,8 @@ export function ProofPage() {
           }
         >
           <p>
-            Once you have an account, this page compares its stored balance with the
-            journal and certifies the result.
+            Once you have an account, this page compares its stored balance with the journal
+            and certifies the result.
           </p>
         </EmptyState>
       </>
@@ -88,9 +88,10 @@ export function ProofPage() {
   return (
     <>
       <PageHeader
-        folio={`${accountLabel(account, accounts)} · audit`}
-        title="Proof"
-        lede="The stored balance is only trustworthy if it equals the journal. This certificate checks both."
+        folio="Certificate"
+        meta={accountLabel(account, accounts)}
+        title="Proof of journal"
+        lede="The stored balance is only trustworthy if it equals the journal. This page checks both."
         actions={
           <button
             type="button"
@@ -98,7 +99,7 @@ export function ProofPage() {
             onClick={() => void recheck()}
             disabled={refreshing || audit.isFetching}
           >
-            <RefreshIcon width={17} height={17} />
+            <RefreshIcon width={16} height={16} />
             {refreshing || audit.isFetching ? 'Checking…' : 'Recheck'}
           </button>
         }
@@ -118,56 +119,49 @@ export function ProofPage() {
       ) : null}
 
       {audit.data ? (
-        <article className="certificate" aria-labelledby="certificate-title">
-          <header className="certificate__head">
+        <article className="proof-sheet" aria-labelledby="certificate-title">
+          <header className="proof-sheet__head">
             <div>
-              <p className="certificate__brand">SentinelPay</p>
-              <p className="certificate__kind mono">Certificate of balance</p>
+              <p className="folio">Certificate of balance</p>
+              <h2 id="certificate-title">
+                {balanced ? 'This account is in balance.' : 'This account does not balance.'}
+              </h2>
             </div>
-            <span className="certificate__serial mono">
-              {shortId(audit.data.accountId)}
-            </span>
+            <StatusTag status={account.status} />
           </header>
+          <p className="proof-sheet__id mono">{audit.data.accountId}</p>
 
-          <h2 id="certificate-title">
-            {balanced ? 'This account is in balance.' : 'This account does not balance.'}
-          </h2>
-          <p className="certificate__account mono">{audit.data.accountId}</p>
-
-          <dl className="certificate__rows">
-            <div>
-              <dt>Account</dt>
-              <dd>{accountLabel(account, accounts)}</dd>
+          <div className="reconcile">
+            <div className="reconcile__side">
+              <p className="reconcile__label">Stored balance</p>
+              <p className="reconcile__value">
+                {formatMinor(audit.data.materializedBalanceMinor, account.currency)}
+              </p>
             </div>
+            <div className="reconcile__side">
+              <p className="reconcile__label">Journal balance</p>
+              <p className="reconcile__value">
+                {formatMinor(audit.data.ledgerBalanceMinor, account.currency)}
+              </p>
+            </div>
+          </div>
+
+          <div className={`reconcile__result${balanced ? '' : ' reconcile__result--attention'}`}>
+            <StatusMark ok={Boolean(balanced)} />
+            <p className="reconcile__difference">
+              Difference <span>{formatMinor(audit.data.driftMinor, account.currency)}</span>
+            </p>
+            <p className="reconcile__note">
+              {balanced
+                ? 'Every linked transaction nets to zero.'
+                : 'Inspect this account before moving money.'}
+            </p>
+          </div>
+
+          <dl className="proof-sheet__meta">
             <div>
               <dt>Currency</dt>
               <dd>{account.currency}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>
-                <StatusTag status={account.status} />
-              </dd>
-            </div>
-            <div className="certificate__row--major">
-              <dt>Stored balance</dt>
-              <dd className="money">
-                {formatMinor(audit.data.materializedBalanceMinor, account.currency)}
-              </dd>
-            </div>
-            <div className="certificate__row--major">
-              <dt>Journal balance</dt>
-              <dd className="money">
-                {formatMinor(audit.data.ledgerBalanceMinor, account.currency)}
-              </dd>
-            </div>
-            <div
-              className={`certificate__row--difference${
-                audit.data.driftMinor === 0 ? ' is-balanced' : ''
-              }`}
-            >
-              <dt>Difference</dt>
-              <dd className="money">{formatMinor(audit.data.driftMinor, account.currency)}</dd>
             </div>
             <div>
               <dt>Journal entries</dt>
@@ -178,27 +172,19 @@ export function ProofPage() {
               <dd>{audit.data.transactionsBalanced ? 'Yes' : 'No'}</dd>
             </div>
             <div>
-              <dt>Checked at</dt>
+              <dt>Checked</dt>
               <dd>{formatDateTime(audit.data.checkedAt)}</dd>
             </div>
           </dl>
 
-          <div className="certificate__stamp">
-            <Seal
-              state={balanced ? 'balanced' : 'attention'}
-              label={balanced ? 'Balanced' : 'Attention'}
-              detail={balanced ? 'journal verified' : 'drift found'}
-            />
-          </div>
-
-          <footer className="certificate__foot">
+          <footer className="proof-sheet__foot">
             <div>
               <h3>How to read this</h3>
               <p>
-                The stored balance is the number kept on the account. The journal balance
-                is the sum of every debit and credit posted to it. SentinelPay treats the
-                account as sound only when the difference is zero and every linked
-                transaction nets to zero.
+                The stored balance is the number kept on the account. The journal balance is
+                the sum of every debit and credit posted to it. SentinelPay treats the account
+                as sound only when the difference is zero and every linked transaction nets to
+                zero.
               </p>
             </div>
             <button type="button" className="btn btn--ghost" onClick={() => window.print()}>

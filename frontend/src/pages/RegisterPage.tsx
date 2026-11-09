@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
@@ -18,6 +18,10 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const displayNameRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmationRef = useRef<HTMLInputElement>(null);
 
   if (status === 'authenticated') {
     return <Navigate to="/wallet" replace />;
@@ -46,6 +50,15 @@ export function RegisterPage() {
     }
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
+      if (nextFieldErrors.username) {
+        usernameRef.current?.focus();
+      } else if (nextFieldErrors.displayName) {
+        displayNameRef.current?.focus();
+      } else if (nextFieldErrors.password) {
+        passwordRef.current?.focus();
+      } else if (nextFieldErrors.confirmation) {
+        confirmationRef.current?.focus();
+      }
       return;
     }
 
@@ -75,11 +88,9 @@ export function RegisterPage() {
   return (
     <GateLayout>
       <div className="gate__form-inner">
-        <p className="folio">New customer</p>
         <h2>Open your ledger</h2>
         <p className="gate__form-lede">
-          One identity, a double-entry account book, and a statement you can verify
-          yourself.
+          One identity, a double-entry account book, and a statement you can verify yourself.
         </p>
 
         {error ? <ErrorNotice>{error}</ErrorNotice> : null}
@@ -94,13 +105,14 @@ export function RegisterPage() {
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
+              ref={usernameRef}
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               aria-invalid={fieldErrors.username ? true : undefined}
               aria-describedby={fieldErrors.username ? 'username-error' : undefined}
             />
             {fieldErrors.username ? (
-              <span className="field__error" id="username-error">
+              <span className="field__error" id="username-error" role="alert">
                 {fieldErrors.username}
               </span>
             ) : (
@@ -115,13 +127,14 @@ export function RegisterPage() {
               type="text"
               name="displayName"
               autoComplete="name"
+              ref={displayNameRef}
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               aria-invalid={fieldErrors.displayName ? true : undefined}
               aria-describedby={fieldErrors.displayName ? 'display-name-error' : undefined}
             />
             {fieldErrors.displayName ? (
-              <span className="field__error" id="display-name-error">
+              <span className="field__error" id="display-name-error" role="alert">
                 {fieldErrors.displayName}
               </span>
             ) : null}
@@ -134,13 +147,14 @@ export function RegisterPage() {
               type="password"
               name="password"
               autoComplete="new-password"
+              ref={passwordRef}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               aria-invalid={fieldErrors.password ? true : undefined}
               aria-describedby={fieldErrors.password ? 'password-error' : 'password-hint'}
             />
             {fieldErrors.password ? (
-              <span className="field__error" id="password-error">
+              <span className="field__error" id="password-error" role="alert">
                 {fieldErrors.password}
               </span>
             ) : (
@@ -157,20 +171,21 @@ export function RegisterPage() {
               type="password"
               name="confirmation"
               autoComplete="new-password"
+              ref={confirmationRef}
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               aria-invalid={fieldErrors.confirmation ? true : undefined}
               aria-describedby={fieldErrors.confirmation ? 'confirmation-error' : undefined}
             />
             {fieldErrors.confirmation ? (
-              <span className="field__error" id="confirmation-error">
+              <span className="field__error" id="confirmation-error" role="alert">
                 {fieldErrors.confirmation}
               </span>
             ) : null}
           </label>
 
           <button type="submit" className="btn btn--primary btn--wide" disabled={pending}>
-            {pending ? 'Opening your ledger…' : 'Open my ledger'}
+            {pending ? 'Creating your ledger…' : 'Create your ledger'}
           </button>
         </form>
 

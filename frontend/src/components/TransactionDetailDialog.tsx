@@ -7,6 +7,10 @@ import { accountLabel } from './accounts';
 import { CopyButton, ErrorNotice, LoadingBlock, StatusTag } from './ui';
 import { CloseIcon } from './icons';
 
+function typeLabel(type: string): string {
+  return type.charAt(0) + type.slice(1).toLowerCase();
+}
+
 export function TransactionDetailDialog({
   transactionId,
   accounts,
@@ -43,9 +47,12 @@ export function TransactionDetailDialog({
     dialog.current?.close();
   }
 
-  const amount = data?.entries
-    .filter((entry) => entry.direction === 'DEBIT')
-    .reduce((total, entry) => total + entry.amountMinor, 0) ?? 0;
+  // The server posts equal debit and credit entries; read the amount from the
+  // debit side rather than deriving a total in the browser.
+  const amount =
+    data?.entries.find((entry) => entry.direction === 'DEBIT')?.amountMinor ??
+    data?.entries[0]?.amountMinor ??
+    0;
 
   return (
     <dialog
@@ -62,7 +69,7 @@ export function TransactionDetailDialog({
         <header className="detail__head">
           <div>
             <p className="folio">Transaction record</p>
-            <h2 id="detail-title">{data ? data.type.toLowerCase() : 'Reading posting'}</h2>
+            <h2 id="detail-title">{data ? typeLabel(data.type) : 'Reading posting'}</h2>
           </div>
           <button type="button" className="icon-button" onClick={close} aria-label="Close transaction">
             <CloseIcon />
@@ -75,10 +82,8 @@ export function TransactionDetailDialog({
         {data ? (
           <>
             <div className="detail__amount">
-              <span className="detail__amount-label">
-                {data.entries.some((entry) => entry.direction === 'DEBIT') ? 'Debited' : 'Credited'}
-              </span>
-              <span className="detail__amount-value money">
+              <span className="detail__amount-label">Amount</span>
+              <span className="detail__amount-value">
                 {formatMinor(amount, data.currency)}
               </span>
               <StatusTag status={data.status} />
@@ -138,7 +143,9 @@ export function TransactionDetailDialog({
                     return (
                       <tr key={entry.entryId}>
                         <td>
-                          <span>{own ? accountLabel(own, accounts) : `Account ${shortId(entry.accountId)}`}</span>
+                          <span>
+                            {own ? accountLabel(own, accounts) : `Account ${shortId(entry.accountId)}`}
+                          </span>
                           <span className="journal__id mono">{shortId(entry.entryId)}</span>
                         </td>
                         <td>

@@ -86,8 +86,9 @@ export function ActivityPage() {
   return (
     <>
       <PageHeader
-        folio={`${accountLabel(account, accounts)} · ${account.currency}`}
-        title="Statement"
+        folio="Statement"
+        meta={accountLabel(account, accounts)}
+        title="Account activity"
         lede="Every posting to this account, newest first. Open a row to see both sides of the entry."
         actions={
           <Link className="btn btn--primary" to="/wallet/send">
@@ -105,7 +106,7 @@ export function ActivityPage() {
       <section className="statement-meta" aria-label="Account summary">
         <div className="statement-meta__item">
           <span className="statement-meta__label">Closing balance</span>
-          <span className="statement-meta__value money">
+          <span className="statement-meta__value">
             {formatMinor(account.balanceMinor, account.currency)}
           </span>
         </div>

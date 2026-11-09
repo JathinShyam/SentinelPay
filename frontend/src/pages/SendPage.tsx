@@ -11,6 +11,19 @@ import { formatDateTime, formatMinor, parseAmount, shortId } from '../format';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function symbolFor(currency?: string): string {
+  if (currency === 'INR') {
+    return '₹';
+  }
+  if (currency === 'USD') {
+    return '$';
+  }
+  if (currency === 'EUR') {
+    return '€';
+  }
+  return '';
+}
+
 function transferError(failure: unknown): string {
   if (failure instanceof ApiError) {
     switch (failure.code) {
@@ -76,13 +89,13 @@ export function SendPage() {
   }, [destinationId, destinations]);
 
   if (isPending) {
-    return <LoadingBlock label="Preparing a transfer slip…" />;
+    return <LoadingBlock label="Preparing a payment order…" />;
   }
 
   if (error || !data) {
     return (
       <>
-        <PageHeader folio="Transfer slip" title="Send money" />
+        <PageHeader folio="Payment order" title="Send money" />
         <ErrorNotice>
           {error instanceof Error ? error.message : 'Your accounts could not be read.'}
         </ErrorNotice>
@@ -93,7 +106,7 @@ export function SendPage() {
   if (accounts.length === 0) {
     return (
       <>
-        <PageHeader folio="Transfer slip" title="Send money" />
+        <PageHeader folio="Payment order" title="Send money" />
         <EmptyState
           title="You need an account first"
           action={
@@ -204,12 +217,15 @@ export function SendPage() {
   return (
     <>
       <PageHeader
-        folio="Transfer slip"
-        title={stage === 'receipt' ? 'Transfer posted' : 'Send money'}
+        folio="Payment order"
+        meta={stage === 'compose' ? 'Draft' : stage === 'review' ? 'Ready to post' : 'Posted'}
+        title={stage === 'receipt' ? 'Transfer posted' : stage === 'review' ? 'Review transfer' : 'Send money'}
         lede={
           stage === 'receipt'
             ? 'Both sides of the entry are now part of the journal.'
-            : 'Move money between your accounts or to another account ID. You review before anything is posted.'
+            : stage === 'review'
+              ? 'Check the details. Posting writes both sides to the journal.'
+              : 'Move money between your accounts or to another account. You review every detail before it is posted.'
         }
       />
 
@@ -218,58 +234,52 @@ export function SendPage() {
           {formError ? <ErrorNotice>{formError}</ErrorNotice> : null}
 
           {stage === 'compose' ? (
-            <section className="slip" aria-labelledby="slip-title">
-              <header className="slip__head">
-                <div>
-                  <p className="slip__kind">Transfer slip</p>
-                  <h2 id="slip-title">From and to</h2>
-                </div>
-                <span className="slip__no mono">No. {shortId(idempotencyKey.current)}</span>
+            <section className="order" aria-labelledby="order-title">
+              <header className="order__head">
+                <h2 id="order-title">Transfer details</h2>
+                <span className="order__no mono">Ref {shortId(idempotencyKey.current)}</span>
               </header>
 
-              <fieldset className="slip__field">
-                <legend>Send from</legend>
-                <div className="source-list">
-                  {accounts.map((account, index) => (
-                    <button
-                      key={account.accountId}
-                      type="button"
-                      className={`source-option${
-                        account.accountId === sourceId ? ' source-option--active' : ''
-                      }`}
-                      onClick={() => chooseSource(account.accountId)}
-                      aria-pressed={account.accountId === sourceId}
-                    >
-                      <span className="source-option__name">
-                        {account.currency} · Account {index + 1}
-                      </span>
-                      <span className="source-option__balance money">
-                        {formatMinor(account.balanceMinor, account.currency)}
-                      </span>
-                    </button>
-                  ))}
+              <fieldset className="order__field">
+                <legend>From</legend>
+                <div className="option-list">
+                  {accounts.map((account) => {
+                    const active = account.accountId === sourceId;
+                    return (
+                      <button
+                        key={account.accountId}
+                        type="button"
+                        className={`option${active ? ' option--active' : ''}`}
+                        onClick={() => chooseSource(account.accountId)}
+                        aria-pressed={active}
+                      >
+                        <span className="option__name">{accountLabel(account, accounts)}</span>
+                        <span className="option__balance money">
+                          {formatMinor(account.balanceMinor, account.currency)}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </fieldset>
 
-              <fieldset className="slip__field">
-                <legend>Send to</legend>
-                <div className="segmented" role="tablist" aria-label="Destination type">
+              <fieldset className="order__field">
+                <legend>To</legend>
+                <div className="segmented" role="group" aria-label="Destination type">
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={mode === 'own'}
+                    aria-pressed={mode === 'own'}
                     className={`segmented__button${mode === 'own' ? ' segmented__button--active' : ''}`}
                     onClick={() => {
                       setMode('own');
                       setFormError(null);
                     }}
                   >
-                    My accounts
+                    Your accounts
                   </button>
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={mode === 'external'}
+                    aria-pressed={mode === 'external'}
                     className={`segmented__button${
                       mode === 'external' ? ' segmented__button--active' : ''
                     }`}
@@ -284,25 +294,24 @@ export function SendPage() {
 
                 {mode === 'own' ? (
                   destinations.length > 0 ? (
-                    <div className="source-list">
-                      {destinations.map((account) => (
-                        <button
-                          key={account.accountId}
-                          type="button"
-                          className={`source-option${
-                            account.accountId === destinationId ? ' source-option--active' : ''
-                          }`}
-                          onClick={() => setDestinationId(account.accountId)}
-                          aria-pressed={account.accountId === destinationId}
-                        >
-                          <span className="source-option__name">
-                            {accountLabel(account, accounts)}
-                          </span>
-                          <span className="source-option__balance money">
-                            {formatMinor(account.balanceMinor, account.currency)}
-                          </span>
-                        </button>
-                      ))}
+                    <div className="option-list">
+                      {destinations.map((account) => {
+                        const active = account.accountId === destinationId;
+                        return (
+                          <button
+                            key={account.accountId}
+                            type="button"
+                            className={`option${active ? ' option--active' : ''}`}
+                            onClick={() => setDestinationId(account.accountId)}
+                            aria-pressed={active}
+                          >
+                            <span className="option__name">{accountLabel(account, accounts)}</span>
+                            <span className="option__balance money">
+                              {formatMinor(account.balanceMinor, account.currency)}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="quiet">
@@ -316,9 +325,11 @@ export function SendPage() {
                     <input
                       className="field__input mono"
                       type="text"
+                      name="destinationAccountId"
                       value={externalId}
                       onChange={(event) => setExternalId(event.target.value)}
                       placeholder="00000000-0000-0000-0000-000000000000"
+                      autoComplete="off"
                       autoCapitalize="none"
                       spellCheck={false}
                     />
@@ -330,21 +341,23 @@ export function SendPage() {
                 )}
               </fieldset>
 
-              <label className="slip__amount">
-                <span className="slip__amount-label">Amount</span>
-                <span className="slip__amount-input">
-                  <span className="slip__currency" aria-hidden="true">
-                    {source?.currency === 'INR' ? '₹' : source?.currency === 'USD' ? '$' : '€'}
+              <label className="order__amount">
+                <span className="order__amount-label">Amount</span>
+                <span className="order__amount-input">
+                  <span className="order__currency" aria-hidden="true">
+                    {symbolFor(source?.currency)}
                   </span>
                   <input
                     type="text"
+                    name="amount"
                     inputMode="decimal"
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
                     placeholder="0.00"
                     aria-label="Amount"
+                    autoComplete="off"
                   />
-                  <span className="slip__currency-code">{source?.currency}</span>
+                  <span className="order__code mono">{source?.currency}</span>
                 </span>
               </label>
 
@@ -353,38 +366,37 @@ export function SendPage() {
                 <input
                   className="field__input"
                   type="text"
+                  name="note"
                   value={note}
                   maxLength={140}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="What is this transfer for?"
+                  autoComplete="off"
                 />
                 <span className="field__hint">The note appears on both statements.</span>
               </label>
 
-              <footer className="slip__foot">
+              <footer className="order__foot">
                 <p>
                   Available in {source?.currency}:{' '}
                   <Money minor={source?.balanceMinor ?? 0} currency={source?.currency ?? 'INR'} />
                 </p>
                 <button type="button" className="btn btn--primary" onClick={startReview}>
                   Review transfer
-                  <SendIcon width={17} height={17} />
+                  <SendIcon width={16} height={16} />
                 </button>
               </footer>
             </section>
           ) : null}
 
           {stage === 'review' && source ? (
-            <section className="slip" aria-labelledby="review-title">
-              <header className="slip__head">
-                <div>
-                  <p className="slip__kind">Review before posting</p>
-                  <h2 id="review-title">Check the slip</h2>
-                </div>
-                <span className="slip__no mono">No. {shortId(idempotencyKey.current)}</span>
+            <section className="order" aria-labelledby="review-title">
+              <header className="order__head">
+                <h2 id="review-title">Check the details</h2>
+                <span className="order__no mono">Ref {shortId(idempotencyKey.current)}</span>
               </header>
 
-              <dl className="slip__review">
+              <dl className="order__review">
                 <div>
                   <dt>From</dt>
                   <dd>{accountLabel(source, accounts)}</dd>
@@ -395,7 +407,7 @@ export function SendPage() {
                 </div>
                 <div>
                   <dt>Amount</dt>
-                  <dd className="money slip__review-amount">
+                  <dd className="order__review-amount">
                     {formatMinor(amountMinor, source.currency)}
                   </dd>
                 </div>
@@ -409,12 +421,12 @@ export function SendPage() {
                 </div>
               </dl>
 
-              <p className="slip__warning">
-                Posting this writes a debit and a credit to the journal. It cannot be
-                edited afterwards; a correction is a new reversal entry.
+              <p className="order__warning">
+                Posting this writes a debit and a credit to the journal. It cannot be edited
+                afterwards; a correction is a new reversal entry.
               </p>
 
-              <footer className="slip__foot slip__foot--review">
+              <footer className="order__foot order__foot--review">
                 <button
                   type="button"
                   className="btn btn--ghost"
@@ -440,7 +452,6 @@ export function SendPage() {
 
           {stage === 'receipt' && receipt ? (
             <section className="receipt" aria-labelledby="receipt-title" role="status">
-              <div className="receipt__tear" aria-hidden="true" />
               <header className="receipt__head">
                 <div>
                   <p className="folio">Transfer receipt</p>
@@ -449,11 +460,11 @@ export function SendPage() {
                 <StatusTag status={receipt.status} />
               </header>
 
-              <p className="receipt__amount money">
+              <p className="receipt__amount">
                 {formatMinor(receipt.amountMinor, receipt.currency)}
               </p>
               <p className="receipt__line">
-                <CheckIcon width={17} height={17} />
+                <CheckIcon width={16} height={16} />
                 Debit and credit recorded. Reference {shortId(receipt.transactionId)}.
               </p>
 
@@ -495,18 +506,18 @@ export function SendPage() {
           <h2>What happens when you post</h2>
           <ol className="send-aside__steps">
             <li>
-              <span className="send-aside__no mono">01</span>
+              <span className="send-aside__no mono">1</span>
               <p>The source account is locked and checked for sufficient funds.</p>
             </li>
             <li>
-              <span className="send-aside__no mono">02</span>
+              <span className="send-aside__no mono">2</span>
               <p>
                 A debit is written to the source and a credit of the same value to the
                 destination.
               </p>
             </li>
             <li>
-              <span className="send-aside__no mono">03</span>
+              <span className="send-aside__no mono">3</span>
               <p>
                 Both entries share one transaction ID, which you can open from either
                 statement.

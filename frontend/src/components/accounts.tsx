@@ -22,20 +22,19 @@ export function AccountChips({
     return null;
   }
   return (
-    <nav className="account-chips" aria-label={label}>
+    <nav className="account-tabs" aria-label={label}>
       {accounts.map((account) => {
         const active = account.accountId === selected;
         return (
           <button
             key={account.accountId}
             type="button"
-            className={`account-chip${active ? ' account-chip--active' : ''}`}
+            className={`account-tab${active ? ' account-tab--active' : ''}`}
             aria-pressed={active}
             onClick={() => onSelect(account.accountId)}
           >
-            <span className="account-chip__currency">{account.currency}</span>
-            <span className="account-chip__name">{accountLabel(account, accounts)}</span>
-            <span className="account-chip__balance">
+            <span className="account-tab__name">{accountLabel(account, accounts)}</span>
+            <span className="account-tab__balance money">
               {formatMinor(account.balanceMinor, account.currency)}
             </span>
           </button>

@@ -21,24 +21,11 @@ export function Money({
   );
 }
 
-export function Seal({
-  state = 'balanced',
-  label,
-  detail,
-}: {
-  state?: 'balanced' | 'attention';
-  label?: string;
-  detail?: string;
-}) {
-  const balanced = state === 'balanced';
+export function StatusMark({ ok }: { ok: boolean }) {
   return (
-    <div className={`seal seal--${state}`} role="status">
-      <div className="seal__ring">
-        {balanced ? <CheckIcon width={18} height={18} /> : <AlertIcon width={18} height={18} />}
-        <strong>{label ?? (balanced ? 'Balanced' : 'Attention')}</strong>
-        <small>{detail ?? (balanced ? 'journal verified' : 'drift detected')}</small>
-      </div>
-    </div>
+    <span className={`status-mark${ok ? ' status-mark--ok' : ' status-mark--attention'}`} aria-hidden="true">
+      {ok ? <CheckIcon width={14} height={14} /> : <AlertIcon width={14} height={14} />}
+    </span>
   );
 }
 
@@ -49,7 +36,11 @@ export function StatusTag({ status }: { status: string }) {
       : status === 'REVERSED' || status === 'FROZEN'
         ? 'reversed'
         : 'failed';
-  return <span className={`tag tag--${tone}`}>{status.charAt(0) + status.slice(1).toLowerCase()}</span>;
+  return (
+    <span className={`tag tag--${tone}`}>
+      {status.charAt(0) + status.slice(1).toLowerCase()}
+    </span>
+  );
 }
 
 export function ErrorNotice({
@@ -61,7 +52,7 @@ export function ErrorNotice({
 }) {
   return (
     <div className={`notice notice--${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
-      {tone === 'error' ? <AlertIcon width={18} height={18} /> : null}
+      {tone === 'error' ? <AlertIcon width={17} height={17} /> : null}
       <div>{children}</div>
     </div>
   );
@@ -87,7 +78,6 @@ export function EmptyState({
 }) {
   return (
     <div className="empty">
-      <div className="empty__rule" aria-hidden="true" />
       <h2>{title}</h2>
       <div className="empty__body">{children}</div>
       {action ? <div className="empty__action">{action}</div> : null}
@@ -110,7 +100,7 @@ export function CopyButton({ value, label = 'Copy' }: { value: string; label?: s
 
   return (
     <button type="button" className="copy" onClick={copy} aria-live="polite">
-      <CopyIcon width={15} height={15} />
+      <CopyIcon width={14} height={14} />
       {copied ? 'Copied' : label}
     </button>
   );

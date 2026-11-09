@@ -2,7 +2,7 @@
 
 **A double-entry payments ledger and end-of-day settlement engine built to survive concurrency, crash and broker failure.**
 
-SentinelPay is a Java 21 / Spring Boot 3.5 service backed by PostgreSQL, Redis and Kafka. It accepts account and transfer requests, posts immutable double-entry journal lines, publishes events through a transactional outbox, and reconciles 100,000-record clearing files with bounded virtual-thread concurrency. A bundled React wallet gives signed-in customers a passbook-style view of balances, statements and a server-computed proof of their own journal; Grafana remains the operator surface.
+SentinelPay is a Java 21 / Spring Boot 3.5 service backed by PostgreSQL, Redis and Kafka. It accepts account and transfer requests, posts immutable double-entry journal lines, publishes events through a transactional outbox, and reconciles 100,000-record clearing files with bounded virtual-thread concurrency. A bundled React wallet gives signed-in customers a private-ledger view of balances, statements and a server-computed proof of their own journal; Grafana remains the operator surface.
 
 The project is deliberately built around three failure modes that break naive payment services:
 
@@ -110,7 +110,7 @@ The original transfer row is never mutated. A reversal is a new `REVERSAL` trans
 
 ## Customer wallet
 
-The customer app is a React 19 / Vite 7 / TypeScript application bundled into the Spring Boot static resources. It is deliberately a passbook rather than a neobank: warm paper, ledger green, ruled statements, an editorial serif for headings and an accounting mono for figures. No gradients, glass panels or animated counters.
+The customer app is a React 19 / Vite 7 / TypeScript application bundled into the Spring Boot static resources. It reads as a contemporary private-ledger statement rather than a neobank: bone paper, ultramarine and oxblood accents, ruled statements, Schibsted Grotesk for interface text and IBM Plex Mono for figures and references. No gradients, glass panels, ornamental cards or animated counters.
 
 | Route | Purpose |
 | --- | --- |
