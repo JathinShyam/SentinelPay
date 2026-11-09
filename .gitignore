@@ -6,6 +6,9 @@ out/
 *.jar
 *.war
 
+# Frontend
+frontend/node_modules/
+
 # Maven wrapper downloads
 .mvn/wrapper/maven-wrapper.jar
 

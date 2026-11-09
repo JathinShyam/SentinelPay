@@ -4,6 +4,7 @@ import com.sentinelpay.ledger.domain.ReversalResult;
 import com.sentinelpay.ledger.service.ReversalService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +25,7 @@ public class TransactionController {
     }
 
     @PostMapping("/transactions/{transactionId}/reverse")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReversalResponse> reverse(
             @PathVariable UUID transactionId,
             @RequestHeader("Idempotency-Key") String idempotencyKey,

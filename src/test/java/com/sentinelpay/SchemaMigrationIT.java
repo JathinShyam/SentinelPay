@@ -49,8 +49,8 @@ class SchemaMigrationIT {
                 .migrate();
 
         assertThat(result.migrationsExecuted)
-                .as("V1, V2 and V3 must apply on an empty database")
-                .isEqualTo(3);
+                .as("V1-V4 must apply on an empty database")
+                .isEqualTo(4);
     }
 
     @Test
@@ -59,7 +59,7 @@ class SchemaMigrationIT {
                 "SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank",
                 String.class);
 
-        assertThat(versions).containsExactly("1", "2", "3");
+        assertThat(versions).containsExactly("1", "2", "3", "4");
     }
 
     @Test
@@ -75,7 +75,8 @@ class SchemaMigrationIT {
                 "outbox_events",
                 "processed_kafka_events",
                 "reconciliation_runs",
-                "reconciliation_discrepancies");
+                "reconciliation_discrepancies",
+                "app_users");
 
         Boolean isPartial = jdbc.queryForObject("""
                 SELECT i.indpred IS NOT NULL

@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -131,6 +132,131 @@ public class LedgerEntryRepository {
                 .optional()
                 .orElse(0L);
         return balance;
+    }
+
+    private static final String ACTIVITY_SELECT = """
+            SELECT e.entry_id, e.transaction_id, t.tx_type,
+                   CASE WHEN EXISTS (
+                       SELECT 1 FROM transactions r WHERE r.reversal_of = t.transaction_id
+                   ) THEN 'REVERSED' ELSE t.status END AS effective_status,
+                   e.direction, e.signed_amount_minor, e.running_balance_minor,
+                   t.currency, t.description, e.created_at,
+                   (SELECT other.account_id
+                    FROM ledger_entries other
+                    WHERE other.transaction_id = e.transaction_id
+                      AND other.account_id <> e.account_id
+                    ORDER BY other.entry_id
+                    LIMIT 1) AS counterparty_account_id
+            FROM ledger_entries e
+            JOIN transactions t ON t.transaction_id = e.transaction_id
+            """;
+
+    private static final RowMapper<AccountActivityRow> ACTIVITY_ROW_MAPPER = (rs, rowNum) ->
+            new AccountActivityRow(
+                    UUID.fromString(rs.getString("entry_id")),
+                    UUID.fromString(rs.getString("transaction_id")),
+                    rs.getString("tx_type"),
+                    rs.getString("effective_status"),
+                    Direction.valueOf(rs.getString("direction")),
+                    rs.getLong("signed_amount_minor"),
+                    rs.getLong("running_balance_minor"),
+                    rs.getString("currency").trim(),
+                    rs.getString("description"),
+                    rs.getTimestamp("created_at").toInstant(),
+                    rs.getString("counterparty_account_id") == null ? null
+                            : UUID.fromString(rs.getString("counterparty_account_id")));
+
+    /**
+     * Newest-first account statement. The cursor is the (created_at, entry_id)
+     * pair of the last row already delivered, which is stable even when two
+     * entries share a timestamp.
+     */
+    public List<AccountActivityRow> findActivity(UUID accountId,
+                                                 Instant cursorTime,
+                                                 UUID cursorEntryId,
+                                                 int limit) {
+        if (cursorTime == null || cursorEntryId == null) {
+            return jdbc.sql(ACTIVITY_SELECT + """
+                            WHERE e.account_id = :accountId
+                            ORDER BY e.created_at DESC, e.entry_id DESC
+                            LIMIT :limit
+                            """)
+                    .param("accountId", accountId)
+                    .param("limit", limit)
+                    .query(ACTIVITY_ROW_MAPPER)
+                    .list();
+        }
+        return jdbc.sql(ACTIVITY_SELECT + """
+                        WHERE e.account_id = :accountId
+                          AND (e.created_at, e.entry_id) < (:cursorTime, :cursorEntryId)
+                        ORDER BY e.created_at DESC, e.entry_id DESC
+                        LIMIT :limit
+                        """)
+                .param("accountId", accountId)
+                .param("cursorTime", java.sql.Timestamp.from(cursorTime))
+                .param("cursorEntryId", cursorEntryId)
+                .param("limit", limit)
+                .query(ACTIVITY_ROW_MAPPER)
+                .list();
+    }
+
+    public List<AccountActivityRow> findRecentActivityForOwner(String ownerId, int limit) {
+        return jdbc.sql(ACTIVITY_SELECT + """
+                        JOIN accounts a ON a.account_id = e.account_id
+                        WHERE a.owner_id = :ownerId
+                        ORDER BY e.created_at DESC, e.entry_id DESC
+                        LIMIT :limit
+                        """)
+                .param("ownerId", ownerId)
+                .param("limit", limit)
+                .query(ACTIVITY_ROW_MAPPER)
+                .list();
+    }
+
+    /**
+     * One scan over the owner's accounts proving that every materialised
+     * balance still equals the sum of its journal entries.
+     */
+    public OwnerLedgerSummary summarizeOwner(String ownerId) {
+        return jdbc.sql("""
+                        WITH account_balances AS (
+                            SELECT a.account_id, a.balance_minor,
+                                   COALESCE(SUM(e.signed_amount_minor), 0) AS ledger_balance,
+                                   COUNT(e.entry_id) AS entry_count
+                            FROM accounts a
+                            LEFT JOIN ledger_entries e ON e.account_id = a.account_id
+                            WHERE a.owner_id = :ownerId
+                            GROUP BY a.account_id, a.balance_minor
+                        )
+                        SELECT COUNT(*) AS accounts_checked,
+                               COALESCE(SUM(entry_count), 0) AS entry_count,
+                               COALESCE(SUM(ABS(balance_minor - ledger_balance)), 0) AS drift_minor
+                        FROM account_balances
+                        """)
+                .param("ownerId", ownerId)
+                .query((resultSet, rowNum) -> new OwnerLedgerSummary(
+                        resultSet.getInt("accounts_checked"),
+                        resultSet.getLong("entry_count"),
+                        resultSet.getLong("drift_minor")))
+                .single();
+    }
+
+    public record AccountActivityRow(
+            UUID entryId,
+            UUID transactionId,
+            String type,
+            String status,
+            Direction direction,
+            long signedAmountMinor,
+            long runningBalanceMinor,
+            String currency,
+            String description,
+            Instant createdAt,
+            UUID counterpartyAccountId
+    ) {
+    }
+
+    public record OwnerLedgerSummary(int accountsChecked, long entryCount, long driftMinor) {
     }
 
 }

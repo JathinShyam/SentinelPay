@@ -3,6 +3,8 @@ package com.sentinelpay;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sentinelpay.ledger.domain.AccountView;
+import com.sentinelpay.support.TestClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -87,6 +89,9 @@ public abstract class AbstractIntegrationTest {
         registry.add("sentinelpay.outbox.retry-base-seconds", () -> "1");
         registry.add("sentinelpay.outbox.metrics-refresh-ms", () -> "500");
         registry.add("spring.kafka.producer.properties.max.block.ms", () -> "2000");
+        registry.add("sentinelpay.security.bootstrap-admin.username", () -> "admin");
+        registry.add("sentinelpay.security.bootstrap-admin.password", () -> "admin-password");
+        registry.add("sentinelpay.security.bootstrap-admin.display-name", () -> "Test Administrator");
     }
 
     private static int freePort() {
@@ -100,16 +105,34 @@ public abstract class AbstractIntegrationTest {
     @LocalServerPort
     protected int port;
 
-    @Autowired
     protected TestRestTemplate rest;
 
     @Autowired
     protected ObjectMapper objectMapper;
 
+    @BeforeEach
+    void authenticateAsAdmin() {
+        TestClient client = new TestClient(port, true);
+        ResponseEntity<JsonNode> login = client.login("admin", "admin-password");
+        if (login.getStatusCode().value() != 200) {
+            throw new IllegalStateException("Test administrator login failed: " + login);
+        }
+        this.rest = client.rest();
+    }
+
+    protected TestClient newClient() {
+        return new TestClient(port, true);
+    }
+
+    protected TestClient newRawClient() {
+        return new TestClient(port, false);
+    }
+
     protected AccountView createAccount(String ownerId, String currency, long initialDepositMinor) {
+        // Ownership now comes from the authenticated session. The ownerId argument is
+        // retained so existing tests read naturally; it is not trusted by the server.
         ResponseEntity<AccountView> response = rest.postForEntity("/api/v1/accounts",
                 jsonEntity(Map.of(
-                        "ownerId", ownerId,
                         "currency", currency,
                         "initialDepositMinor", initialDepositMinor), null),
                 AccountView.class);

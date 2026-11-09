@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SentinelPay">
+  <rect width="64" height="64" rx="4" fill="#133c30"/>
+  <rect x="5.5" y="5.5" width="53" height="53" rx="2" fill="none" stroke="#faf7ed" stroke-opacity="0.45"/>
+  <path d="M21 14.5h19a5 5 0 0 1 5 5v30H26a5 5 0 0 1-5-5v-30Z" fill="none" stroke="#faf7ed" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M21 44.5a5 5 0 0 1 5-5h19" fill="none" stroke="#faf7ed" stroke-width="2.4"/>
+  <path d="M28 23h11M28 30h7" stroke="#faf7ed" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

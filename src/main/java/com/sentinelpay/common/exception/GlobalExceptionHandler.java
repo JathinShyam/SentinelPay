@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -20,6 +21,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -40,6 +42,20 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = build(exception.code(), exception.getMessage(), request);
         exception.properties().forEach(problem::setProperty);
         return ResponseEntity.status(exception.code().status()).body(problem);
+    }
+
+    /**
+     * Method security ({@code @PreAuthorize}) runs inside the controller invocation,
+     * so its denial is resolved by this advice rather than by Spring Security's
+     * ExceptionTranslationFilter. Without this handler the generic fallback would
+     * turn a 403 into a 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException exception,
+                                                            HttpServletRequest request) {
+        ProblemDetail problem = build(ApiErrorCode.FORBIDDEN,
+                "You do not have permission to perform this action", request);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -127,6 +143,14 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = build(ApiErrorCode.DEPENDENCY_UNAVAILABLE,
                 "The service is temporarily unable to process the request", request);
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(problem);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ProblemDetail> handleMissingResource(NoResourceFoundException exception,
+                                                               HttpServletRequest request) {
+        ProblemDetail problem = build(ApiErrorCode.NOT_FOUND,
+                "No resource exists at this path", request);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
     }
 
     @ExceptionHandler(Exception.class)

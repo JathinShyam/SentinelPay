@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.Ordered;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * The database UNIQUE(idempotency_key) remains the durable backstop.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
+@Order(SecurityProperties.DEFAULT_FILTER_ORDER + 10)
 public class RedisIdempotencyFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(RedisIdempotencyFilter.class);
@@ -64,6 +64,9 @@ public class RedisIdempotencyFilter extends OncePerRequestFilter {
             return true;
         }
         if (path.startsWith("/api/v1/reconciliation")) {
+            return true;
+        }
+        if (path.startsWith("/api/v1/auth")) {
             return true;
         }
         return !MUTATING_METHODS.contains(request.getMethod());

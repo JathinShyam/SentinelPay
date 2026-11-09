@@ -76,6 +76,13 @@ spring:
 server:
   port: ${SENTINELPAY_HTTP_PORT:8080}
   shutdown: graceful
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SENTINELPAY_SESSION_COOKIE_SECURE:false}
 
 management:
   endpoints:
@@ -95,6 +102,11 @@ management:
         enabled: true
 
 sentinelpay:
+  security:
+    bootstrap-admin:
+      username: ${SENTINELPAY_ADMIN_USERNAME:}
+      password: ${SENTINELPAY_ADMIN_PASSWORD:}
+      display-name: ${SENTINELPAY_ADMIN_DISPLAY_NAME:Administrator}
   outbox:
     topic: ledger.transactions.v1
     poll-interval-ms: 50
