@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getOverview } from '../api/client';
 import type { Account } from '../api/types';
-import { useAuth } from '../auth/AuthProvider';
 import { PageHeader } from '../components/PageHeader';
 import { LedgerTable } from '../components/LedgerTable';
 import { OpenAccountDialog } from '../components/OpenAccountDialog';
@@ -19,31 +18,17 @@ import {
 import { PlusIcon } from '../components/icons';
 import { formatMinor, shortId, todayLabel } from '../format';
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) {
-    return 'Good morning';
-  }
-  if (hour < 18) {
-    return 'Good afternoon';
-  }
-  return 'Good evening';
-}
-
 function ordered(accounts: Account[]): Account[] {
   return [...accounts].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export function OverviewPage() {
-  const { user } = useAuth();
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['overview'],
     queryFn: getOverview,
   });
   const [openAccount, setOpenAccount] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
-
-  const firstName = user?.displayName.split(/\s+/)[0] ?? 'there';
 
   if (isPending) {
     return <LoadingBlock label="Reading your accounts…" />;
@@ -74,7 +59,7 @@ export function OverviewPage() {
       <PageHeader
         folio="Statement"
         meta={todayLabel()}
-        title={`${greeting()}, ${firstName}.`}
+        title="Your ledger, as posted"
         lede="Balances, postings and proof in one ledger."
         actions={
           hasAccounts ? (
@@ -106,7 +91,7 @@ export function OverviewPage() {
                 </p>
                 <p className="balance__status-note">
                   {balanced
-                    ? `${data.proof.accountsChecked} ${accountWord} and ${data.proof.entryCount} ${entryWord} checked.`
+                    ? `${data.proof.accountsChecked} ${accountWord} and ${data.proof.entryCount} ${entryWord} checked. Balances are built from posted entries.`
                     : `A difference of ${formatMinor(
                         data.proof.driftMinor,
                         data.totals[0]?.currency ?? 'INR',
@@ -176,26 +161,6 @@ export function OverviewPage() {
             ) : (
               <p className="quiet">No postings yet. Money will appear here as soon as it moves.</p>
             )}
-          </section>
-
-          <section className={`journal-note${balanced ? '' : ' journal-note--attention'}`} aria-labelledby="journal-note-title">
-            <StatusMark ok={balanced} />
-            <div className="journal-note__copy">
-              <h2 id="journal-note-title">
-                {balanced ? 'Kept as posted' : 'Attention required'}
-              </h2>
-              <p>
-                {balanced
-                  ? 'Balances are built from posted entries, not typed in. Nothing is edited or deleted; a correction is a new reversal.'
-                  : `A difference of ${formatMinor(
-                      data.proof.driftMinor,
-                      data.totals[0]?.currency ?? 'INR',
-                    )} was found. Inspect the proof before moving money.`}
-              </p>
-            </div>
-            <Link className="text-link" to="/wallet/proof">
-              Read the proof
-            </Link>
           </section>
         </>
       ) : (

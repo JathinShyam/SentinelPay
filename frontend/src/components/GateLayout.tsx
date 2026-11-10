@@ -12,7 +12,7 @@ export function GateLayout({ children }: { children: ReactNode }) {
       <div className="gate__body">
         <section className="gate__pitch">
           <p className="folio">Double-entry wallet</p>
-          <h1>Every balance has a paper trail.</h1>
+          <h1>Every balance has a paper trail</h1>
           <p className="gate__lede">
             A wallet where each balance is the sum of postings you can inspect. Keep your
             accounts, move money, and verify the journal yourself.

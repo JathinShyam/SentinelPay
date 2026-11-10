@@ -89,8 +89,8 @@ figure {
 h1,
 h2,
 h3 {
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   text-wrap: balance;
 }
@@ -132,7 +132,7 @@ svg {
   transform: translateY(-200%);
   background: var(--ink);
   color: var(--paper);
-  padding: 9px 14px;
+  padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -170,20 +170,20 @@ svg {
 }
 
 .muted {
-  color: var(--rule-strong);
+  color: var(--ink-faint);
 }
 
 .quiet {
   color: var(--ink-faint);
   font-size: 14px;
   line-height: 1.6;
-  margin: 22px 0;
+  margin: 24px 0;
 }
 
 .folio {
   color: var(--ultra);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.015em;
   line-height: 1.3;
 }
@@ -193,10 +193,10 @@ svg {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   font-size: 17px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -215,8 +215,8 @@ svg {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 28px;
-  padding: 18px var(--gutter);
+  gap: 24px;
+  padding: 16px var(--gutter);
   padding-left: max(var(--gutter), calc((100vw - var(--page-max)) / 2 + var(--gutter)));
   padding-right: max(var(--gutter), calc((100vw - var(--page-max)) / 2 + var(--gutter)));
   background: var(--paper);
@@ -226,12 +226,12 @@ svg {
 .topnav {
   display: flex;
   align-items: center;
-  gap: clamp(22px, 3.4vw, 46px);
+  gap: clamp(24px, 3.2vw, 44px);
 }
 
 .topnav__link {
   position: relative;
-  padding: 7px 0;
+  padding: 8px 0;
   color: var(--ink-soft);
   font-size: 14.5px;
   font-weight: 500;
@@ -245,7 +245,7 @@ svg {
 
 .topnav__link--active {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .topnav__link--active::after {
@@ -268,14 +268,14 @@ svg {
 
 .identity {
   display: grid;
-  gap: 1px;
+  gap: 2px;
   text-align: right;
   line-height: 1.3;
 }
 
 .identity__name {
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -291,8 +291,8 @@ svg {
 .signout {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 0 6px 16px;
+  gap: 8px;
+  padding: 8px 0 8px 16px;
   border: 0;
   border-left: 1px solid var(--rule);
   background: none;
@@ -310,7 +310,7 @@ svg {
 .page {
   width: min(100%, var(--page-max));
   margin: 0 auto;
-  padding: clamp(38px, 5vw, 76px) var(--gutter) 104px;
+  padding: clamp(40px, 5vw, 72px) var(--gutter) 104px;
 }
 
 .app {
@@ -332,9 +332,9 @@ svg {
 
 .page-head {
   display: grid;
-  grid-template-columns: 172px minmax(0, 1fr);
-  gap: clamp(28px, 4vw, 52px);
-  margin-bottom: clamp(38px, 5vw, 62px);
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: clamp(32px, 4vw, 48px);
+  margin-bottom: clamp(40px, 5vw, 64px);
 }
 
 .page-head__meta {
@@ -348,7 +348,7 @@ svg {
 }
 
 .page-head__meta-note {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-faint);
@@ -361,8 +361,8 @@ svg {
 
 .page-head__main h1 {
   font-size: clamp(2.25rem, 4.3vw, 3.55rem);
-  font-weight: 590;
-  letter-spacing: -0.038em;
+  font-weight: 500;
+  letter-spacing: -0.03em;
   line-height: 1.02;
 }
 
@@ -371,7 +371,7 @@ svg {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-top: 22px;
+  margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid var(--rule);
 }
@@ -396,7 +396,7 @@ svg {
   border-bottom: 1px solid var(--rule-strong);
   color: var(--ink);
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
   transition: color 120ms ease, border-color 120ms ease;
@@ -415,7 +415,7 @@ svg {
   background: none;
   color: var(--ultra);
   font-size: inherit;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -427,14 +427,14 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 41px;
-  padding: 10px 17px;
+  min-height: 40px;
+  padding: 10px 16px;
   border: 1px solid var(--ink);
   border-radius: 0;
   background: transparent;
   color: var(--ink);
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
@@ -469,8 +469,8 @@ svg {
 
 .btn--wide {
   width: 100%;
-  min-height: 46px;
-  padding: 13px 18px;
+  min-height: 48px;
+  padding: 12px 20px;
 }
 
 .btn:disabled {
@@ -493,8 +493,8 @@ svg {
 .icon-button {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: 0;
@@ -510,8 +510,8 @@ svg {
 
 .balance {
   border-top: 2px solid var(--ink);
-  padding-top: clamp(22px, 3vw, 34px);
-  margin-bottom: clamp(48px, 6vw, 78px);
+  padding-top: clamp(24px, 3vw, 32px);
+  margin-bottom: clamp(48px, 6vw, 80px);
 }
 
 .balance__totals {
@@ -531,7 +531,7 @@ svg {
   color: var(--ink-faint);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .balance__value {
@@ -539,7 +539,7 @@ svg {
   font-variant-numeric: tabular-nums;
   font-size: clamp(2.5rem, 6.2vw, 4.9rem);
   font-weight: 400;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.04em;
   line-height: 0.98;
   white-space: nowrap;
 }
@@ -548,8 +548,8 @@ svg {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  margin-top: clamp(26px, 3vw, 38px);
+  gap: 16px;
+  margin-top: clamp(24px, 3vw, 40px);
   padding-top: 16px;
   border-top: 1px solid var(--rule);
 }
@@ -560,7 +560,7 @@ svg {
 
 .balance__status-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
 }
 
@@ -595,7 +595,7 @@ svg {
 /* ---------- Sections ---------- */
 
 .section {
-  margin-bottom: clamp(46px, 6vw, 70px);
+  margin-bottom: clamp(48px, 6vw, 72px);
 }
 
 .section:last-of-type {
@@ -606,8 +606,8 @@ svg {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
-  padding-bottom: 13px;
+  gap: 24px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--rule-strong);
   margin-bottom: 0;
 }
@@ -615,8 +615,8 @@ svg {
 .section-heading h2,
 .section-heading h3 {
   font-size: 1.3rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
@@ -643,11 +643,11 @@ svg {
 
 .account-row {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 102px 166px 84px;
+  grid-template-columns: 48px minmax(0, 1fr) 96px 160px 88px;
   grid-template-areas: 'code name status balance link';
   align-items: center;
-  gap: 18px;
-  padding: 17px 2px;
+  gap: 16px;
+  padding: 16px 0;
 }
 
 .account-row + .account-row {
@@ -658,7 +658,7 @@ svg {
   grid-area: code;
   color: var(--ink-faint);
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
 .account-row__name {
@@ -667,7 +667,7 @@ svg {
   gap: 2px;
   min-width: 0;
   font-size: 15px;
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -687,7 +687,7 @@ svg {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: 15px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   text-align: right;
   white-space: nowrap;
 }
@@ -703,17 +703,19 @@ svg {
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
+  padding: 2px 8px;
   font-size: 10.5px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1.5;
   white-space: nowrap;
 }
 
 .tag--posted {
-  background: var(--ultra-soft);
-  color: var(--ultra);
+  background: transparent;
+  color: var(--ink-faint);
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .tag--reversed {
@@ -740,11 +742,11 @@ svg {
 }
 
 .ledger th {
-  padding: 9px 8px;
+  padding: 8px;
   border-bottom: 1px solid var(--rule-strong);
   color: var(--ink-faint);
   font-size: 11px;
-  font-weight: 550;
+  font-weight: 500;
   letter-spacing: 0.01em;
   text-align: left;
 }
@@ -755,31 +757,31 @@ svg {
 
 .ledger th:nth-child(1) {
   width: 112px;
-  padding-left: 2px;
+  padding-left: 0;
 }
 
 .ledger th:nth-child(3),
 .ledger th:nth-child(4) {
-  width: 132px;
+  width: 128px;
 }
 
 .ledger th:nth-child(5) {
-  width: 148px;
-  padding-right: 2px;
+  width: 144px;
+  padding-right: 0;
 }
 
 .ledger td {
-  padding: 13px 8px;
+  padding: 12px 8px;
   border-bottom: 1px solid var(--rule-soft);
   vertical-align: middle;
 }
 
 .ledger td:first-child {
-  padding-left: 2px;
+  padding-left: 0;
 }
 
 .ledger td:last-child {
-  padding-right: 2px;
+  padding-right: 0;
 }
 
 .ledger tbody tr {
@@ -837,7 +839,7 @@ svg {
 
 .ledger__primary {
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -880,51 +882,21 @@ svg {
   font-size: 12.5px;
 }
 
-/* ---------- Journal note ---------- */
-
-.journal-note {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  margin-top: clamp(40px, 5vw, 60px);
-  padding: 20px 0;
-  border-top: 1px solid var(--rule-strong);
-  border-bottom: 1px solid var(--rule);
-}
-
-.journal-note__copy h2 {
-  font-size: 14.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.journal-note__copy p {
-  margin-top: 2px;
-  color: var(--ink-soft);
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-
-.journal-note--attention .journal-note__copy h2 {
-  color: var(--oxblood);
-}
-
 /* ---------- Statement metadata / account tabs ---------- */
 
 .account-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 30px;
+  gap: 0 32px;
   border-bottom: 1px solid var(--rule);
-  margin-bottom: 26px;
+  margin-bottom: 24px;
 }
 
 .account-tab {
   display: grid;
   gap: 2px;
   justify-items: start;
-  padding: 9px 0 11px;
+  padding: 8px 0 12px;
   border: 0;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -939,7 +911,7 @@ svg {
 
 .account-tab__name {
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.3;
 }
 
@@ -961,8 +933,8 @@ svg {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
-  margin: 0 0 26px;
-  padding: 17px 0 19px;
+  margin: 0 0 24px;
+  padding: 16px 0 20px;
   border-top: 1px solid var(--rule-strong);
   border-bottom: 1px solid var(--rule-strong);
 }
@@ -983,7 +955,7 @@ svg {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: 1.15rem;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .statement-meta__id {
@@ -997,11 +969,11 @@ svg {
 .load-more {
   display: flex;
   justify-content: center;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 .end-note {
-  margin-top: 28px;
+  margin-top: 24px;
   color: var(--ink-faint);
   font-size: 12px;
   text-align: center;
@@ -1011,8 +983,8 @@ svg {
 
 .send-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
-  gap: clamp(34px, 5vw, 76px);
+  grid-template-columns: minmax(0, 1fr) 288px;
+  gap: clamp(32px, 5vw, 72px);
   align-items: start;
 }
 
@@ -1022,16 +994,16 @@ svg {
 
 .send-aside {
   position: sticky;
-  top: 104px;
-  padding-top: 14px;
+  top: 96px;
+  padding-top: 16px;
   border-top: 2px solid var(--ink);
 }
 
 .send-aside h2 {
   margin: 8px 0 20px;
   font-size: 1.2rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   line-height: 1.25;
 }
 
@@ -1046,8 +1018,8 @@ svg {
 .send-aside__steps li {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
-  gap: 10px;
-  padding: 13px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-top: 1px solid var(--rule-soft);
   color: var(--ink-soft);
   font-size: 12.5px;
@@ -1061,8 +1033,8 @@ svg {
 }
 
 .send-aside__note {
-  margin-top: 18px;
-  padding-top: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
   border-top: 1px solid var(--rule);
   color: var(--ink-faint);
   font-size: 11.5px;
@@ -1078,13 +1050,13 @@ svg {
   align-items: baseline;
   justify-content: space-between;
   gap: 18px;
-  padding: 15px 0 22px;
+  padding: 16px 0 24px;
 }
 
 .order__head h2 {
   font-size: 1.45rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .order__no {
@@ -1096,15 +1068,15 @@ svg {
 .order__field {
   min-width: 0;
   margin: 0;
-  padding: 0 0 26px;
+  padding: 0 0 24px;
   border: 0;
 }
 
 .order__field legend {
-  padding: 0 0 10px;
+  padding: 0 0 12px;
   color: var(--ink-soft);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .option-list {
@@ -1116,10 +1088,10 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
-  min-height: 46px;
-  padding: 12px 2px;
+  min-height: 48px;
+  padding: 12px 0;
   border: 0;
   border-bottom: 1px solid var(--rule);
   background: none;
@@ -1132,22 +1104,22 @@ svg {
 }
 
 .option--active {
-  padding-left: 14px;
+  padding-left: 16px;
 }
 
 .option--active::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 9px;
-  bottom: 9px;
+  top: 8px;
+  bottom: 8px;
   width: 3px;
   background: var(--ultra);
 }
 
 .option__name {
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .option__balance {
@@ -1163,14 +1135,14 @@ svg {
 }
 
 .segmented__button {
-  padding: 7px 0;
-  margin: 0 26px -1px 0;
+  padding: 8px 0;
+  margin: 0 24px -1px 0;
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
   color: var(--ink-faint);
   font-size: 12.5px;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .segmented__button:hover {
@@ -1184,7 +1156,7 @@ svg {
 
 .order__amount {
   display: block;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
   padding: 20px 0 24px;
   border-top: 1px solid var(--rule-strong);
   border-bottom: 1px solid var(--rule-strong);
@@ -1194,13 +1166,13 @@ svg {
   display: block;
   color: var(--ink-soft);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .order__amount-input {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   margin-top: 8px;
 }
 
@@ -1221,7 +1193,7 @@ svg {
   font-family: var(--mono);
   font-size: clamp(2rem, 4vw, 2.9rem);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
   line-height: 1.1;
   outline: none;
 }
@@ -1247,9 +1219,9 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
-  padding-top: 18px;
+  padding-top: 16px;
   border-top: 1px solid var(--rule-strong);
 }
 
@@ -1274,9 +1246,9 @@ svg {
 
 .order__review > div {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 20px;
-  padding: 13px 0;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 24px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--rule-soft);
 }
 
@@ -1296,12 +1268,12 @@ svg {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: 1.35rem;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .order__warning {
-  margin: 22px 0 26px;
-  padding: 10px 0 10px 14px;
+  margin: 24px 0;
+  padding: 12px 0 12px 16px;
   border-left: 2px solid var(--ultra);
   color: var(--ink-soft);
   font-size: 12.5px;
@@ -1318,31 +1290,31 @@ svg {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
-  padding: 15px 0 24px;
+  gap: 16px;
+  padding: 16px 0 24px;
 }
 
 .receipt__head h2 {
-  margin-top: 7px;
+  margin-top: 8px;
   font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .receipt__amount {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: clamp(2.3rem, 5vw, 3.5rem);
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
   line-height: 1.05;
 }
 
 .receipt__line {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 28px;
+  gap: 8px;
+  margin-bottom: 24px;
   color: var(--ultra);
   font-size: 12.5px;
   line-height: 1.5;
@@ -1355,8 +1327,8 @@ svg {
 .receipt__meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 32px;
-  margin: 0 0 26px;
+  gap: 16px 32px;
+  margin: 0 0 24px;
   padding: 20px 0;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
@@ -1382,8 +1354,8 @@ svg {
 /* ---------- Proof sheet ---------- */
 
 .proof-sheet {
-  margin-top: 4px;
-  padding: clamp(24px, 4vw, 46px);
+  margin-top: 0;
+  padding: clamp(24px, 4vw, 48px);
   background: var(--sheet);
   border-top: 3px solid var(--ink);
 }
@@ -1397,15 +1369,15 @@ svg {
 
 .proof-sheet__head h2 {
   max-width: 22ch;
-  margin-top: 9px;
+  margin-top: 8px;
   font-size: clamp(1.6rem, 3vw, 2.35rem);
-  font-weight: 600;
-  letter-spacing: -0.035em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   line-height: 1.08;
 }
 
 .proof-sheet__id {
-  margin: 14px 0 32px;
+  margin: 16px 0 32px;
   color: var(--ink-faint);
   font-size: 10.5px;
   line-height: 1.5;
@@ -1421,7 +1393,7 @@ svg {
 
 .reconcile__side {
   min-width: 0;
-  padding: 23px 0;
+  padding: 24px 0;
 }
 
 .reconcile__side + .reconcile__side {
@@ -1439,7 +1411,7 @@ svg {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: clamp(1.55rem, 3vw, 2.25rem);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -1453,7 +1425,7 @@ svg {
   align-items: center;
   column-gap: 12px;
   row-gap: 2px;
-  padding: 17px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -1464,7 +1436,7 @@ svg {
 .reconcile__difference {
   grid-area: diff;
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .reconcile__difference span {
@@ -1487,7 +1459,7 @@ svg {
 .proof-sheet__meta {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  gap: 24px;
   margin: 0;
   padding: 24px 0;
   border-bottom: 1px solid var(--rule);
@@ -1513,9 +1485,9 @@ svg {
 }
 
 .proof-sheet__foot h3 {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
@@ -1535,13 +1507,13 @@ svg {
 .form {
   display: flex;
   flex-direction: column;
-  gap: 23px;
+  gap: 24px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1554,13 +1526,13 @@ svg {
 .field__label {
   color: var(--ink-soft);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.005em;
 }
 
 .field__input {
   width: 100%;
-  padding: 8px 0;
+  padding: 10px 0;
   border: 0;
   border-bottom: 1px solid var(--rule-strong);
   border-radius: 0;
@@ -1606,8 +1578,8 @@ svg {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 10px 11px;
+  gap: 8px;
+  padding: 12px;
   border: 1px solid var(--rule);
   cursor: pointer;
 }
@@ -1644,7 +1616,7 @@ svg {
 .currency-option__code {
   display: block;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
 }
 
@@ -1661,9 +1633,9 @@ svg {
 .notice {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   margin: 0 0 24px;
-  padding: 12px 14px;
+  padding: 16px;
   border-left: 2px solid var(--oxblood);
   background: var(--oxblood-soft);
   color: var(--ink);
@@ -1684,8 +1656,8 @@ svg {
 .loading {
   display: flex;
   flex-direction: column;
-  gap: 13px;
-  padding: 54px 0;
+  gap: 12px;
+  padding: 48px 0;
   color: var(--ink-soft);
   font-size: 13px;
 }
@@ -1725,14 +1697,14 @@ svg {
 
 .empty {
   max-width: 620px;
-  padding-top: 26px;
+  padding-top: 24px;
   border-top: 2px solid var(--ink);
 }
 
 .empty h2 {
   font-size: clamp(1.6rem, 3vw, 2rem);
-  font-weight: 600;
-  letter-spacing: -0.035em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .empty__body {
@@ -1747,7 +1719,7 @@ svg {
 }
 
 .empty__action {
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
 .copy {
@@ -1781,7 +1753,7 @@ svg {
   border-radius: 0;
   background: var(--sheet);
   color: var(--ink);
-  box-shadow: 0 28px 80px rgba(18, 23, 19, 0.22);
+  box-shadow: 0 16px 48px rgba(18, 23, 19, 0.18);
   overscroll-behavior: contain;
 }
 
@@ -1801,16 +1773,16 @@ svg {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--ink);
 }
 
 .detail__head h2 {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 1.55rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .detail__amount {
@@ -1818,7 +1790,7 @@ svg {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px 12px;
-  padding: 22px 0;
+  padding: 24px 0;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -1832,15 +1804,15 @@ svg {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: 2rem;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
 .detail__meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 30px;
-  margin: 22px 0;
+  gap: 16px 32px;
+  margin: 24px 0;
 }
 
 .detail__meta dt {
@@ -1851,19 +1823,19 @@ svg {
 .detail__meta dd {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: 13.5px;
   overflow-wrap: anywhere;
 }
 
 .detail__journal {
-  margin-top: 26px;
+  margin-top: 24px;
 }
 
 .detail__journal .section-heading {
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   margin-bottom: 0;
 }
 
@@ -1878,11 +1850,11 @@ svg {
 }
 
 .journal th {
-  padding: 8px 7px;
+  padding: 8px;
   border-bottom: 1px solid var(--rule-strong);
   color: var(--ink-faint);
   font-size: 10.5px;
-  font-weight: 550;
+  font-weight: 500;
   text-align: left;
   white-space: nowrap;
 }
@@ -1892,7 +1864,7 @@ svg {
 }
 
 .journal td {
-  padding: 10px 7px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--rule-soft);
   vertical-align: middle;
 }
@@ -1957,7 +1929,7 @@ svg {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 18px var(--gutter);
+  padding: 16px var(--gutter);
   border-bottom: 1px solid var(--rule);
 }
 
@@ -1965,7 +1937,7 @@ svg {
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--ink-faint);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.012em;
 }
 
 .gate__body {
@@ -1979,7 +1951,7 @@ svg {
   flex-direction: column;
   justify-content: center;
   gap: 24px;
-  padding: clamp(48px, 6vw, 86px) clamp(26px, 5vw, 74px);
+  padding: clamp(48px, 6vw, 80px) clamp(24px, 5vw, 72px);
   background: var(--ultra);
   color: var(--sheet);
 }
@@ -1991,8 +1963,8 @@ svg {
 .gate__pitch h1 {
   max-width: 13ch;
   font-size: clamp(2.7rem, 5.2vw, 4.9rem);
-  font-weight: 520;
-  letter-spacing: -0.05em;
+  font-weight: 500;
+  letter-spacing: -0.04em;
   line-height: 0.98;
 }
 
@@ -2006,8 +1978,8 @@ svg {
 .gate__facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-  margin: 22px 0 0;
+  gap: 24px;
+  margin: 24px 0 0;
   padding-top: 20px;
   border-top: 1px solid rgba(251, 252, 248, 0.28);
 }
@@ -2015,7 +1987,7 @@ svg {
 .gate__facts dt {
   margin-bottom: 4px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.005em;
 }
 
@@ -2040,24 +2012,24 @@ svg {
 
 .gate__form-inner h2 {
   font-size: clamp(1.8rem, 3vw, 2.25rem);
-  font-weight: 600;
-  letter-spacing: -0.04em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .gate__form-lede {
-  margin: 9px 0 28px;
+  margin: 8px 0 24px;
   color: var(--ink-soft);
   font-size: 13.5px;
   line-height: 1.55;
 }
 
 .gate__form-inner .notice {
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .gate__switch {
   margin-top: 24px;
-  padding-top: 17px;
+  padding-top: 16px;
   border-top: 1px solid var(--rule);
   color: var(--ink-soft);
   font-size: 13px;
@@ -2065,7 +2037,7 @@ svg {
 
 .gate__switch a {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
   border-bottom: 1px solid var(--ink);
   padding-bottom: 1px;
@@ -2079,13 +2051,13 @@ svg {
 .gate__foot {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 28px;
-  padding: 15px var(--gutter);
+  gap: 8px 24px;
+  padding: 16px var(--gutter);
   border-top: 1px solid var(--rule);
   color: var(--ink-faint);
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.012em;
 }
 
 /* ---------- Bottom navigation ---------- */
@@ -2163,7 +2135,7 @@ svg {
 
   .page-head {
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
+    gap: 16px;
     margin-bottom: 36px;
   }
 
@@ -2171,8 +2143,8 @@ svg {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 18px;
-    padding-top: 9px;
+    gap: 16px;
+    padding-top: 8px;
   }
 
   .page-head__meta-note {
@@ -2195,8 +2167,8 @@ svg {
     grid-template-areas:
       'code name status'
       '. balance link';
-    row-gap: 7px;
-    column-gap: 14px;
+    row-gap: 8px;
+    column-gap: 16px;
     padding: 16px 0;
   }
 
@@ -2207,16 +2179,6 @@ svg {
 
   .account-row__link {
     align-self: end;
-  }
-
-  .journal-note {
-    grid-template-columns: auto minmax(0, 1fr);
-    row-gap: 10px;
-  }
-
-  .journal-note > .text-link {
-    grid-column: 2;
-    justify-self: start;
   }
 
   .bottom-nav {
@@ -2233,10 +2195,10 @@ svg {
   }
 
   .bottom-nav__link {
-    padding: 14px 4px 13px;
+    padding: 14px 4px;
     color: var(--ink-faint);
     font-size: 12px;
-    font-weight: 550;
+    font-weight: 500;
     text-align: center;
     text-decoration: none;
   }
@@ -2263,7 +2225,7 @@ svg {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 16px;
-    padding: 15px 0 13px;
+    padding: 14px 0;
     border-bottom: 1px solid var(--rule-soft);
   }
 
@@ -2281,7 +2243,7 @@ svg {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
   }
 
   .ledger__date time,
@@ -2376,7 +2338,7 @@ svg {
 
   .detail__meta {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
 }
 
@@ -2425,7 +2387,7 @@ svg {
 
   .receipt__meta {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
 
   .proof-sheet__head {
@@ -2455,7 +2417,7 @@ svg {
   }
 
   .gate__pitch {
-    gap: 14px;
+    gap: 16px;
     padding: 30px var(--gutter) 34px;
   }
 

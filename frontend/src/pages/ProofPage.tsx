@@ -42,7 +42,7 @@ export function ProofPage() {
   if (accountsQuery.error) {
     return (
       <>
-        <PageHeader folio="Certificate" title="Proof" />
+        <PageHeader folio="Certificate" title="Proof of journal" />
         <ErrorNotice>
           {accountsQuery.error instanceof Error
             ? accountsQuery.error.message
@@ -55,7 +55,7 @@ export function ProofPage() {
   if (accounts.length === 0) {
     return (
       <>
-        <PageHeader folio="Certificate" title="Proof" />
+        <PageHeader folio="Certificate" title="Proof of journal" />
         <EmptyState
           title="Nothing to certify yet"
           action={
@@ -124,7 +124,7 @@ export function ProofPage() {
             <div>
               <p className="folio">Certificate of balance</p>
               <h2 id="certificate-title">
-                {balanced ? 'This account is in balance.' : 'This account does not balance.'}
+                {balanced ? 'This account is in balance' : 'This account does not balance'}
               </h2>
             </div>
             <StatusTag status={account.status} />

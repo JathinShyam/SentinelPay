@@ -51,7 +51,7 @@ export function ActivityPage() {
   if (accountsQuery.error) {
     return (
       <>
-        <PageHeader folio="Statement" title="Activity" />
+        <PageHeader folio="Statement" title="Account activity" />
         <ErrorNotice>
           {accountsQuery.error instanceof Error
             ? accountsQuery.error.message
@@ -64,7 +64,7 @@ export function ActivityPage() {
   if (accounts.length === 0) {
     return (
       <>
-        <PageHeader folio="Statement" title="Activity" />
+        <PageHeader folio="Statement" title="Account activity" />
         <EmptyState
           title="No statement yet"
           action={

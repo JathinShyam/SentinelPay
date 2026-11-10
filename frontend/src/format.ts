@@ -89,11 +89,7 @@ export function formatTime(iso: string): string {
 }
 
 export function todayLabel(): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date());
+  return dateFormatter.format(new Date());
 }
 
 export function initials(name: string): string {

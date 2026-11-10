@@ -370,7 +370,6 @@ export function SendPage() {
                   value={note}
                   maxLength={140}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="What is this transfer for?"
                   autoComplete="off"
                 />
                 <span className="field__hint">The note appears on both statements.</span>
