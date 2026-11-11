@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Brand } from './Brand';
 
 export function GateLayout({ children }: { children: ReactNode }) {
   return (
     <div className="gate">
       <header className="gate__top">
-        <Brand />
+        <Link className="brand-home" to="/">
+          <Brand />
+        </Link>
         <p className="gate__top-note">Customer ledger</p>
       </header>
 

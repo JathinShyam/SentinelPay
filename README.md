@@ -114,6 +114,7 @@ The customer app is a React 19 / Vite 7 / TypeScript application bundled into th
 
 | Route | Purpose |
 | --- | --- |
+| `/` | Public product page: specimen statement, journal mechanics, proof and engineering guarantees |
 | `/login`, `/register` | Real session login, registration and logout |
 | `/wallet` | Server-computed currency totals, accounts and recent activity |
 | `/wallet/send` | Review-first transfer form for the customer's own accounts |
@@ -148,7 +149,7 @@ SENTINELPAY_ADMIN_PASSWORD='change-this-password' \
 ./mvnw spring-boot:run
 ```
 
-Open `http://localhost:8080/login` for the customer wallet. Register a customer, or sign in with the bootstrapped operator account. The operator role is required for reversals and reconciliation; it is never selected by the customer UI.
+Open `http://localhost:8080/` for the public product page, then `http://localhost:8080/login` for the customer wallet. Register a customer, or sign in with the bootstrapped operator account. The operator role is required for reversals and reconciliation; it is never selected by the customer UI.
 
 If ports `5432`, `6379` or `9092` are already in use, override them for both Compose and the app:
 
